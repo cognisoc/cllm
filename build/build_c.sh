@@ -91,19 +91,44 @@ while IFS= read -r -d '' file; do
     C_SOURCES+=("$file")
 done < <(find "${SRC_DIR}" -name "*.c" -print0 2>/dev/null || true)
 
-# Check if we found any C source files
-if [[ ${#C_SOURCES[@]} -eq 0 ]]; then
-    print_warning "No C source files found in ${SRC_DIR}"
+# Find assembly source files
+ASM_SOURCES=()
+while IFS= read -r -d '' file; do
+    ASM_SOURCES+=("$file")
+done < <(find "${SRC_DIR}" -name "*.S" -print0 2>/dev/null || true)
+
+# Check if we found any source files
+if [[ ${#C_SOURCES[@]} -eq 0 && ${#ASM_SOURCES[@]} -eq 0 ]]; then
+    print_warning "No C or assembly source files found in ${SRC_DIR}"
     exit 0
 fi
 
-print_info "Found ${#C_SOURCES[@]} C source files"
+print_info "Found ${#C_SOURCES[@]} C source files and ${#ASM_SOURCES[@]} assembly source files"
 
 # Compile each C source file
 for source_file in "${C_SOURCES[@]}"; do
     # Get relative path for object file name
     rel_path="${source_file#${SRC_DIR}/}"
     obj_name="${rel_path%.c}.o"
+    obj_path="${BUILD_DIR}/c_objects/${obj_name}"
+    
+    # Create directory structure if needed
+    obj_dir=$(dirname "${obj_path}")
+    mkdir -p "${obj_dir}"
+    
+    # Compile the source file
+    print_info "Compiling ${rel_path}..."
+    gcc ${ARCH_FLAGS} ${CFLAGS} -c "${source_file}" -o "${obj_path}" || {
+        print_error "Failed to compile ${source_file}"
+        exit 1
+    }
+done
+
+# Compile each assembly source file
+for source_file in "${ASM_SOURCES[@]}"; do
+    # Get relative path for object file name
+    rel_path="${source_file#${SRC_DIR}/}"
+    obj_name="${rel_path%.S}.o"
     obj_path="${BUILD_DIR}/c_objects/${obj_name}"
     
     # Create directory structure if needed

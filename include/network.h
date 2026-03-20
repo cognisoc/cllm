@@ -29,12 +29,12 @@ typedef struct {
     size_t body_length;
 } http_response_t;
 
-// Function declarations
+// Network interface functions
 int network_init(void);
 int network_receive_packet(char* buffer, size_t* length);
 int network_send_packet(const char* buffer, size_t length);
 int http_parse_request(const char* raw_request, size_t length, http_request_t* request);
 int http_generate_response(const http_response_t* response, char* buffer, size_t* length);
-int route_request(const http_request_t* request, http_response_t* response);
+int route_request(http_request_t* request, http_response_t* response);
 
 #endif

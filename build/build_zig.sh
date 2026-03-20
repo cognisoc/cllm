@@ -65,10 +65,10 @@ done
 
 # Determine Zig build flags based on build mode
 if [[ "${BUILD_MODE}" == "debug" ]]; then
-    ZIG_FLAGS="-O Debug"
+    ZIG_FLAGS="-O Debug --library c"
     print_info "Building in debug mode"
 else
-    ZIG_FLAGS="-O ReleaseFast"
+    ZIG_FLAGS="-O ReleaseFast --library c"
     print_info "Building in release mode"
 fi
 
@@ -76,7 +76,7 @@ fi
 if [[ "${TARGET_ARCH}" == "x86_64" ]]; then
     ZIG_TARGET="x86_64-linux-none"
 elif [[ "${TARGET_ARCH}" == "i386" ]] || [[ "${TARGET_ARCH}" == "x86" ]]; then
-    ZIG_TARGET="i386-linux-none"
+    ZIG_TARGET="x86-linux-musl"
 else
     print_warning "Using default target for ${TARGET_ARCH}"
     ZIG_TARGET=""

@@ -1,5 +1,5 @@
 /*
- * boot.S - Assembly bootloader for our unikernel
+ * boot32.S - 32-bit assembly bootloader for our unikernel
  * Implements multiboot specification
  */
 

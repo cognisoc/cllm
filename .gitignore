@@ -1,17 +1,11 @@
-# C Unikernel for LLM Serving
+# Zig build artifacts
+zig-cache/
+zig-out/
 
-This project implements a C unikernel for serving large language models with the following features:
-- x86_64 QEMU target
-- llama.cpp integration for model inference
-- HTTP API for model interaction
-- JSON-based configuration
-- GPU acceleration (CUDA)
-- vLLM-inspired optimizations
+# IDE files
+.vscode/
+.idea/
 
-## Directories
-
-- `src/` - Source code
-- `include/` - Header files
-- `docs/` - Documentation
-- `tests/` - Test cases
-- `build/` - Build artifacts
+# OS files
+.DS_Store
+Thumbs.db

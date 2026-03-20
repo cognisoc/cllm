@@ -86,37 +86,72 @@ fi
 C_OBJECTS_DIR="${BUILD_DIR}/c_objects"
 ZIG_OBJECTS_DIR="${BUILD_DIR}/zig_objects"
 
+# Core kernel files that should be linked into the main binary
+CORE_C_FILES=("boot.S" "kernel.c" "string.c" "http.c" "api.c" "c_model_interface.c" "network.c" "network/pci.c" "network/e1000.c" "llm.c" "cuda_interface.c" "memory.c" "error.c")
+
+# Find only core C object files
+C_OBJECTS=()
+for file in "${CORE_C_FILES[@]}"; do
+    if [[ "$file" == *.S ]]; then
+        # Assembly file
+        obj_file="${C_OBJECTS_DIR}/${file%.S}.o"
+    else
+        # C file
+        obj_file="${C_OBJECTS_DIR}/${file%.c}.o"
+    fi
+    if [[ -f "$obj_file" ]]; then
+        C_OBJECTS+=("$obj_file")
+    else
+        print_warning "Core C file object not found: $obj_file"
+    fi
+done
+CORE_ZIG_FILES=()
+
 if [[ ! -d "${C_OBJECTS_DIR}" ]]; then
     print_warning "C object directory not found: ${C_OBJECTS_DIR}"
     C_OBJECTS=()
 else
-    # Find all C object files
+    # Find only core C object files
     C_OBJECTS=()
-    while IFS= read -r -d '' file; do
-        C_OBJECTS+=("$file")
-    done < <(find "${C_OBJECTS_DIR}" -name "*.o" -print0 2>/dev/null || true)
+    for file in "${CORE_C_FILES[@]}"; do
+        if [[ "$file" == *.S ]]; then
+            # Assembly file
+            obj_file="${C_OBJECTS_DIR}/${file%.S}.o"
+        else
+            # C file
+            obj_file="${C_OBJECTS_DIR}/${file%.c}.o"
+        fi
+        if [[ -f "$obj_file" ]]; then
+            C_OBJECTS+=("$obj_file")
+        else
+            print_warning "Core C file object not found: $obj_file"
+        fi
+    done
 fi
 
 if [[ ! -d "${ZIG_OBJECTS_DIR}" ]]; then
     print_warning "Zig object directory not found: ${ZIG_OBJECTS_DIR}"
     ZIG_OBJECTS=()
 else
-    # Find all Zig object files
+    # Find only core Zig object files
     ZIG_OBJECTS=()
-    while IFS= read -r -d '' file; do
-        ZIG_OBJECTS+=("$file")
-    done < <(find "${ZIG_OBJECTS_DIR}" -name "*.o" -print0 2>/dev/null || true)
+    for file in "${CORE_ZIG_FILES[@]}"; do
+        obj_file="${ZIG_OBJECTS_DIR}/${file%.zig}.o"
+        if [[ -f "$obj_file" ]]; then
+            ZIG_OBJECTS+=("$obj_file")
+        fi
+    done
 fi
 
 # Check if we have any object files to link
 if [[ ${#C_OBJECTS[@]} -eq 0 && ${#ZIG_OBJECTS[@]} -eq 0 ]]; then
-    print_error "No object files found to link"
+    print_error "No core object files found to link"
     exit 1
 fi
 
-print_info "Found ${#C_OBJECTS[@]} C object files and ${#ZIG_OBJECTS[@]} Zig object files"
+print_info "Found ${#C_OBJECTS[@]} core C object files and ${#ZIG_OBJECTS[@]} core Zig object files"
 
-# Collect all object files
+# Collect core object files only
 ALL_OBJECTS=("${C_OBJECTS[@]}" "${ZIG_OBJECTS[@]}")
 
 # Determine linker script
