@@ -20,20 +20,20 @@ const ModelMetadataStruct = extern struct {
 };
 
 // C-compatible wrapper functions
-export fn c_get_embedded_model() ?[*]const u8 {
-    const model_data = model_embedding.getEmbeddedModel();
-    return model_data.ptr;
+export fn c_get_embedded_model() [*]const u8 {
+    return model_embedding.getEmbeddedModel();
 }
 
 export fn c_get_embedded_model_size() usize {
-    return model_embedding.getModelSize();
+    return model_embedding.getEmbeddedModelSize();
 }
 
 export fn c_validate_embedded_model() c_int {
     const model_data = model_embedding.getEmbeddedModel();
+    const model_size = model_embedding.getEmbeddedModelSize();
     
     // Basic validation - check if it looks like a GGUF file
-    if (model_data.len < 4) {
+    if (model_size < 4) {
         return 0; // Invalid
     }
     
@@ -44,11 +44,12 @@ export fn c_validate_embedded_model() c_int {
 
 export fn c_load_embedded_model() EmbeddedModelInfo {
     const model_data = model_embedding.getEmbeddedModel();
+    const model_size = model_embedding.getEmbeddedModelSize();
     const is_valid = c_validate_embedded_model();
     
     return EmbeddedModelInfo{
-        .data = model_data.ptr,
-        .size = model_data.len,
+        .data = model_data,
+        .size = model_size,
         .is_valid = is_valid,
     };
 }

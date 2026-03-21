@@ -111,7 +111,7 @@ cd build
 
 The build process will create `kernel.bin` in the build directory, which is a self-contained unikernel binary that includes all necessary components.
 
-Note: Due to bootloader implementation complexities, running the kernel in QEMU may require additional configuration. Refer to the BUILD_INSTRUCTIONS.md file for detailed guidance on testing the kernel.
+Note: Due to bootloader implementation complexities, running the kernel in QEMU may require additional configuration. Refer to the docs/BUILD_INSTRUCTIONS.md file for detailed guidance on testing the kernel.
 
 ## Directory Structure
 

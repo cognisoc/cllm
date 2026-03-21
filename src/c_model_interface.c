@@ -3,15 +3,18 @@
  */
 
 #include "c_model_interface.h"
+#include "kernel.h"
 #include "string.h"
-
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <string.h>
+
+// Import the embedded model functions from Zig
+extern const uint8_t* getEmbeddedModel(void);
+extern size_t getEmbeddedModelSize(void);
 
 // Placeholder model data (simulating GGUF format)
-static const uint8_t embedded_model_data[] = {
+static const uint8_t placeholder_model_data[] = {
     // GGUF magic number
     'G', 'G', 'U', 'F',
     // Version (3)
@@ -31,31 +34,49 @@ static const uint8_t embedded_model_data[] = {
 
 // Get embedded model data
 const uint8_t* c_get_embedded_model(void) {
-    return embedded_model_data;
+    // Try to get the embedded model from Zig
+    const uint8_t* model_data = getEmbeddedModel();
+    if (model_data) {
+        return model_data;
+    }
+    
+    // Fall back to placeholder model
+    return placeholder_model_data;
 }
 
 // Get embedded model size
 size_t c_get_embedded_model_size(void) {
-    return sizeof(embedded_model_data);
+    // Try to get the embedded model size from Zig
+    size_t model_size = getEmbeddedModelSize();
+    if (model_size > 0) {
+        return model_size;
+    }
+    
+    // Fall back to placeholder model size
+    return sizeof(placeholder_model_data);
 }
 
 // Validate embedded model
 int c_validate_embedded_model(void) {
+    // Get model data and size
+    const uint8_t* model_data = c_get_embedded_model();
+    size_t model_size = c_get_embedded_model_size();
+    
     // Basic validation - check if it looks like a GGUF file
-    if (sizeof(embedded_model_data) < 4) {
+    if (model_size < 4) {
         return 0; // Invalid
     }
     
     // GGUF files start with "GGUF" magic number
     const uint8_t magic[] = { 'G', 'G', 'U', 'F' };
-    return memcmp(embedded_model_data, magic, 4) == 0 ? 1 : 0; // Valid/Invalid
+    return memcmp(model_data, magic, 4) == 0 ? 1 : 0; // Valid/Invalid
 }
 
 // Load embedded model
 embedded_model_info_t c_load_embedded_model(void) {
     embedded_model_info_t info;
-    info.data = embedded_model_data;
-    info.size = sizeof(embedded_model_data);
+    info.data = c_get_embedded_model();
+    info.size = c_get_embedded_model_size();
     info.is_valid = c_validate_embedded_model();
     return info;
 }
@@ -91,11 +112,14 @@ int c_validate_header(const uint8_t* data, size_t size) {
 model_metadata_t c_get_model_metadata(void) {
     model_metadata_t metadata;
     
+    // Get model data
+    const uint8_t* model_data = c_get_embedded_model();
+    
     // Copy magic number
-    metadata.magic[0] = embedded_model_data[0];
-    metadata.magic[1] = embedded_model_data[1];
-    metadata.magic[2] = embedded_model_data[2];
-    metadata.magic[3] = embedded_model_data[3];
+    metadata.magic[0] = model_data[0];
+    metadata.magic[1] = model_data[1];
+    metadata.magic[2] = model_data[2];
+    metadata.magic[3] = model_data[3];
     
     // Set other fields
     metadata.version = 3;

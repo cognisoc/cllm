@@ -87,7 +87,7 @@ C_OBJECTS_DIR="${BUILD_DIR}/c_objects"
 ZIG_OBJECTS_DIR="${BUILD_DIR}/zig_objects"
 
 # Core kernel files that should be linked into the main binary
-CORE_C_FILES=("boot.S" "kernel.c" "string.c" "http.c" "api.c" "c_model_interface.c" "network.c" "network/pci.c" "network/e1000.c" "llm.c" "cuda_interface.c" "memory.c" "error.c")
+CORE_C_FILES=("boot.S" "kernel.c" "string.c" "http.c" "api.c" "c_model_interface.c" "network.c" "network/pci.c" "network/e1000.c" "llm.c" "cuda_interface.c" "memory.c" "error.c" "model_embedding.c")
 
 # Find only core C object files
 C_OBJECTS=()
@@ -105,7 +105,7 @@ for file in "${CORE_C_FILES[@]}"; do
         print_warning "Core C file object not found: $obj_file"
     fi
 done
-CORE_ZIG_FILES=()
+CORE_ZIG_FILES=("main.zig" "config.zig" "c_bindings.zig" "memory_management.zig" "model_embedding.zig" "embedded_model.zig" "net_discovery.zig" "c_model_interface.zig")
 
 if [[ ! -d "${C_OBJECTS_DIR}" ]]; then
     print_warning "C object directory not found: ${C_OBJECTS_DIR}"

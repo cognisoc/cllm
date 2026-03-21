@@ -9,3 +9,13 @@ zig-out/
 # OS files
 .DS_Store
 Thumbs.db
+ 
+# Build artifacts
+build/c_objects/
+build/zig_objects/
+build/*.o
+build/*.bin
+
+# Model files
+*.gguf
+test_model.gguf

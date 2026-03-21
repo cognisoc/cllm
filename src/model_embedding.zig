@@ -1,30 +1,26 @@
-// model_embedding.zig - Enhanced model embedding with integrity verification (fixed)
+// model_embedding.zig - Enhanced model embedding with integrity verification
 const std = @import("std");
+const builtin = @import("builtin");
 
-// For now, we'll use a placeholder model
-// In a real implementation, this would be generated from an actual model file
-const embedded_model_data = &[_]u8{
-    // Placeholder GGUF header
-    'G', 'G', 'U', 'F', // Magic number (GGUF)
-    0x03, 0x00, 0x00, 0x00, // Version (3)
-    0x00, 0x00, 0x00, 0x00, // Tensor count
-    0x00, 0x00, 0x00, 0x00, // KV count
-    // ... actual model data would go here
-    // This is just placeholder data for testing
-    0x00, 0x01, 0x02, 0x03,
-    0x04, 0x05, 0x06, 0x07,
-    0x08, 0x09, 0x0A, 0x0B,
-};
+// Import the embedded model
+const embedded_model = @import("embedded_model.zig");
+
+// Get embedded model data
+const embedded_model_data = embedded_model.getEmbeddedModel();
 
 // Pre-calculated checksum for integrity verification
 const EMBEDDED_MODEL_CHECKSUM: u32 = 0x12345678; // Placeholder checksum
 
-pub fn getEmbeddedModel() []const u8 {
-    return embedded_model_data;
+// Get embedded model data - EXPORTED FOR C INTERFACE
+pub export fn getEmbeddedModel() [*]const u8 {
+    const model_data = embedded_model.getEmbeddedModel();
+    return model_data.ptr;
 }
 
-pub fn getModelSize() usize {
-    return embedded_model_data.len;
+// Get model size - EXPORTED FOR C INTERFACE
+pub export fn getEmbeddedModelSize() usize {
+    const model_data = embedded_model.getEmbeddedModel();
+    return model_data.len;
 }
 
 // Simple checksum calculation (CRC32-like) - MADE PUBLIC
@@ -159,5 +155,65 @@ pub const ModelValidator = struct {
     pub fn validateIntegrity(model_data: []const u8) bool {
         const calculated_checksum = calculateChecksum(model_data);
         return calculated_checksum == EMBEDDED_MODEL_CHECKSUM;
+    }
+};
+
+// Model embedder - for baking models into the kernel
+pub const ModelEmbedder = struct {
+    allocator: std.mem.Allocator,
+    
+    pub fn init(allocator: std.mem.Allocator) ModelEmbedder {
+        return ModelEmbedder{
+            .allocator = allocator,
+        };
+    }
+    
+    // Embed a model file into the kernel
+    pub fn embedModelFromFile(self: *ModelEmbedder, file_path: []const u8) ![]const u8 {
+        // In a real implementation, this would:
+        // 1. Read the model file
+        // 2. Validate the model format
+        // 3. Embed the model data into the executable
+        // 4. Return the embedded model data
+        
+        // For now, we'll just return the embedded model data
+        std.debug.print("Embedding model from file: {s}\n", .{file_path});
+        _ = self; // Suppress unused parameter warning
+        return getEmbeddedModel();
+    }
+    
+    // Embed model data directly
+    pub fn embedModelData(self: *ModelEmbedder, model_data: []const u8) ![]const u8 {
+        // In a real implementation, this would:
+        // 1. Validate the model data
+        // 2. Embed the model data into the executable
+        // 3. Return the embedded model data
+        
+        // For now, we'll just return the embedded model data
+        std.debug.print("Embedding model data of size: {} bytes\n", .{model_data.len});
+        _ = self; // Suppress unused parameter warning
+        return getEmbeddedModel();
+    }
+    
+    // Generate model embedding code
+    pub fn generateModelEmbeddingCode(self: *ModelEmbedder, model_data: []const u8, output_path: []const u8) !void {
+        // In a real implementation, this would:
+        // 1. Generate Zig code that embeds the model data
+        // 2. Write the code to the output file
+        
+        // For now, we'll just print a message
+        std.debug.print("Generating model embedding code to: {s}\n", .{output_path});
+        std.debug.print("Model data size: {} bytes\n", .{model_data.len});
+        _ = self; // Suppress unused parameter warning
+    }
+    
+    // Verify embedded model
+    pub fn verifyEmbeddedModel(self: *ModelEmbedder, model_data: []const u8) !bool {
+        _ = self;
+        // Verify the embedded model using checksum
+        const calculated_checksum = calculateChecksum(model_data);
+        const is_valid = calculated_checksum == EMBEDDED_MODEL_CHECKSUM;
+        std.debug.print("Embedded model verification: {}\n", .{is_valid});
+        return is_valid;
     }
 };
