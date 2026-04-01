@@ -462,12 +462,9 @@ void kernel_main(void) {
     serial_write("KERNEL: Testing error handling functionality...\n");
     test_error_handling();
     
-    terminal_writestring("\nAll tests completed.\n");
-    serial_write("KERNEL: All tests completed.\n");
+    terminal_writestring("\nAll tests completed. Entering network loop...\n");
+    serial_write("KERNEL: All tests completed. Entering network loop...\n");
     
-    // Halt the CPU
-    serial_write("KERNEL: Halting CPU\n");
-    while (1) {
-        __asm__("hlt");
-    }
+    // Enter networking loop (never returns)
+    network_loop();
 }

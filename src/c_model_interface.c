@@ -1,78 +1,52 @@
 /*
- * c_model_interface.c - Simple C implementation of model interface
+ * c_model_interface.c - Minimal C implementation of model interface (no host deps)
  */
 
 #include "c_model_interface.h"
 #include "kernel.h"
 #include "string.h"
-#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-// Import the embedded model functions from Zig
-extern const uint8_t* getEmbeddedModel(void);
-extern size_t getEmbeddedModelSize(void);
-
-// Placeholder model data (simulating GGUF format)
-static const uint8_t placeholder_model_data[] = {
-    // GGUF magic number
-    'G', 'G', 'U', 'F',
-    // Version (3)
-    0x03, 0x00, 0x00, 0x00,
-    // Tensor count
-    0x00, 0x00, 0x00, 0x00,
-    // KV count
-    0x00, 0x00, 0x00, 0x00,
-    // Placeholder data
-    0x00, 0x01, 0x02, 0x03,
-    0x04, 0x05, 0x06, 0x07,
-    0x08, 0x09, 0x0A, 0x0B,
+// Placeholder embedded GGUF-like bytes
+static const uint8_t embedded_model_bytes[] = {
+    'G','G','U','F',
+    0x03,0x00,0x00,0x00, // version
+    0x00,0x00,0x00,0x00, // tensor_count
+    0x00,0x00,0x00,0x00, // kv_count
+    0x00,0x01,0x02,0x03, 0x04,0x05,0x06,0x07,
+    0x08,0x09,0x0A,0x0B,
 };
 
-// Pre-calculated checksum for integrity verification
-#define EMBEDDED_MODEL_CHECKSUM 0x12345678
+#define EMBEDDED_MODEL_CHECKSUM 0x12345678u
 
-// Get embedded model data
+static uint32_t crc32_calc(const uint8_t* data, size_t size) {
+    uint32_t crc = 0xFFFFFFFFu;
+    for (size_t i = 0; i < size; i++) {
+        crc ^= (uint32_t)data[i];
+        for (int j = 0; j < 8; j++) {
+            if (crc & 1u) crc = (crc >> 1) ^ 0xEDB88320u; else crc >>= 1;
+        }
+    }
+    return crc ^ 0xFFFFFFFFu;
+}
+
 const uint8_t* c_get_embedded_model(void) {
-    // Try to get the embedded model from Zig
-    const uint8_t* model_data = getEmbeddedModel();
-    if (model_data) {
-        return model_data;
-    }
-    
-    // Fall back to placeholder model
-    return placeholder_model_data;
+    return embedded_model_bytes;
 }
 
-// Get embedded model size
 size_t c_get_embedded_model_size(void) {
-    // Try to get the embedded model size from Zig
-    size_t model_size = getEmbeddedModelSize();
-    if (model_size > 0) {
-        return model_size;
-    }
-    
-    // Fall back to placeholder model size
-    return sizeof(placeholder_model_data);
+    return sizeof(embedded_model_bytes);
 }
 
-// Validate embedded model
 int c_validate_embedded_model(void) {
-    // Get model data and size
-    const uint8_t* model_data = c_get_embedded_model();
-    size_t model_size = c_get_embedded_model_size();
-    
-    // Basic validation - check if it looks like a GGUF file
-    if (model_size < 4) {
-        return 0; // Invalid
-    }
-    
-    // GGUF files start with "GGUF" magic number
-    const uint8_t magic[] = { 'G', 'G', 'U', 'F' };
-    return memcmp(model_data, magic, 4) == 0 ? 1 : 0; // Valid/Invalid
+    const uint8_t* d = c_get_embedded_model();
+    size_t n = c_get_embedded_model_size();
+    if (n < 4) return 0;
+    const uint8_t magic[4] = { 'G','G','U','F' };
+    return memcmp(d, magic, 4) == 0 ? 1 : 0;
 }
 
-// Load embedded model
 embedded_model_info_t c_load_embedded_model(void) {
     embedded_model_info_t info;
     info.data = c_get_embedded_model();
@@ -81,87 +55,39 @@ embedded_model_info_t c_load_embedded_model(void) {
     return info;
 }
 
-// Validate GGUF format
 int c_validate_gguf_format(const uint8_t* data, size_t size) {
-    if (data == NULL || size < 4) {
-        return 0; // Invalid
-    }
-    
-    // GGUF files start with "GGUF" magic number
-    const uint8_t magic[] = { 'G', 'G', 'U', 'F' };
-    return memcmp(data, magic, 4) == 0 ? 1 : 0; // Valid/Invalid
+    if (!data || size < 4) return 0;
+    const uint8_t magic[4] = { 'G','G','U','F' };
+    return memcmp(data, magic, 4) == 0 ? 1 : 0;
 }
 
-// Validate header
 int c_validate_header(const uint8_t* data, size_t size) {
-    if (data == NULL || size < 16) {
-        return 0; // Invalid
-    }
-    
-    // Check magic number
-    if (c_validate_gguf_format(data, size) == 0) {
-        return 0; // Invalid magic number
-    }
-    
-    // Check version (basic check)
-    // We'll skip this for now since we don't know how to read little endian integers in this version
-    return 1; // Valid (basic validation passed)
+    if (!data || size < 16) return 0;
+    if (!c_validate_gguf_format(data, size)) return 0;
+    return 1;
 }
 
-// Get model metadata
 model_metadata_t c_get_model_metadata(void) {
-    model_metadata_t metadata;
-    
-    // Get model data
-    const uint8_t* model_data = c_get_embedded_model();
-    
-    // Copy magic number
-    metadata.magic[0] = model_data[0];
-    metadata.magic[1] = model_data[1];
-    metadata.magic[2] = model_data[2];
-    metadata.magic[3] = model_data[3];
-    
-    // Set other fields
-    metadata.version = 3;
-    metadata.tensor_count = 0;
-    metadata.kv_count = 0;
-    strncpy(metadata.architecture, "llama", sizeof(metadata.architecture));
-    metadata.context_length = 2048;
-    
-    return metadata;
+    model_metadata_t m;
+    const uint8_t* d = c_get_embedded_model();
+    m.magic[0] = d[0]; m.magic[1] = d[1]; m.magic[2] = d[2]; m.magic[3] = d[3];
+    m.version = 3;
+    m.tensor_count = 0;
+    m.kv_count = 0;
+    strncpy(m.architecture, "llama", sizeof(m.architecture));
+    m.architecture[sizeof(m.architecture)-1] = '\0';
+    m.context_length = 2048;
+    return m;
 }
 
-// Simple checksum calculation (CRC32-like)
-static uint32_t calculate_checksum(const uint8_t* data, size_t size) {
-    uint32_t crc = 0xFFFFFFFF;
-    for (size_t i = 0; i < size; i++) {
-        crc ^= (uint32_t)data[i];
-        for (int j = 0; j < 8; j++) {
-            if ((crc & 1) != 0) {
-                crc = (crc >> 1) ^ 0xEDB88320;
-            } else {
-                crc >>= 1;
-            }
-        }
-    }
-    return crc ^ 0xFFFFFFFF;
-}
-
-// Verify model integrity
-int c_verify_model_integrity(const uint8_t* data, size_t size) {
-    if (data == NULL || size == 0) {
-        return 0; // Invalid
-    }
-    
-    uint32_t calculated_checksum = calculate_checksum(data, size);
-    return calculated_checksum == EMBEDDED_MODEL_CHECKSUM ? 1 : 0; // Valid/Invalid
-}
-
-// Calculate model checksum
 uint32_t c_calculate_model_checksum(const uint8_t* data, size_t size) {
-    if (data == NULL || size == 0) {
-        return 0; // Invalid
-    }
-    
-    return calculate_checksum(data, size);
+    if (!data || size == 0) return 0;
+    return crc32_calc(data, size);
 }
+
+int c_verify_model_integrity(const uint8_t* data, size_t size) {
+    if (!data || size == 0) return 0;
+    uint32_t c = crc32_calc(data, size);
+    return (c == EMBEDDED_MODEL_CHECKSUM) ? 1 : 0;
+}
+

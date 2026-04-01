@@ -105,7 +105,8 @@ for file in "${CORE_C_FILES[@]}"; do
         print_warning "Core C file object not found: $obj_file"
     fi
 done
-CORE_ZIG_FILES=("main.zig" "config.zig" "c_bindings.zig" "memory_management.zig" "model_embedding.zig" "embedded_model.zig" "net_discovery.zig" "c_model_interface.zig")
+# Temporarily avoid linking Zig objects to keep kernel freestanding
+CORE_ZIG_FILES=()
 
 if [[ ! -d "${C_OBJECTS_DIR}" ]]; then
     print_warning "C object directory not found: ${C_OBJECTS_DIR}"
@@ -129,7 +130,7 @@ else
     done
 fi
 
-if [[ ! -d "${ZIG_OBJECTS_DIR}" ]]; then
+if [[ ! -d "${ZIG_OBJECTS_DIR}" || ${#CORE_ZIG_FILES[@]} -eq 0 ]]; then
     print_warning "Zig object directory not found: ${ZIG_OBJECTS_DIR}"
     ZIG_OBJECTS=()
 else

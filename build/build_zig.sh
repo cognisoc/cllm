@@ -87,8 +87,13 @@ if [[ -n "${ZIG_TARGET}" ]]; then
     ZIG_FLAGS="${ZIG_FLAGS} -target ${ZIG_TARGET}"
 fi
 
-# Create build directory
+# Create build directory and zig cache within workspace
 mkdir -p "${BUILD_DIR}/zig_objects"
+mkdir -p "${BUILD_DIR}/zig-cache"
+
+# Ensure zig caches stay within the workspace to satisfy sandboxing
+export ZIG_GLOBAL_CACHE_DIR="${BUILD_DIR}/zig-cache"
+export ZIG_LOCAL_CACHE_DIR="${BUILD_DIR}/zig-cache"
 
 # Find Zig source files
 ZIG_SOURCES=()
@@ -105,6 +110,7 @@ fi
 print_info "Found ${#ZIG_SOURCES[@]} Zig source files"
 
 # Compile each Zig source file to object file
+pushd "${BUILD_DIR}" >/dev/null
 for source_file in "${ZIG_SOURCES[@]}"; do
     # Get relative path for object file name
     rel_path="${source_file#${SRC_DIR}/}"
@@ -131,6 +137,7 @@ for source_file in "${ZIG_SOURCES[@]}"; do
         mv "${generated_obj}" "${obj_path}"
     fi
 done
+popd >/dev/null
 
 print_success "Zig components built successfully!"
 print_info "Zig object files are in ${BUILD_DIR}/zig_objects"

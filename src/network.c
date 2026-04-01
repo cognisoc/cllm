@@ -46,3 +46,52 @@ int network_send_packet(const char* buffer, size_t length) {
     
     return 0; // Success
 }
+
+// Minimal Ethernet header definition
+typedef struct __attribute__((packed)) {
+    uint8_t dst[6];
+    uint8_t src[6];
+    uint16_t ethertype; // big endian
+} eth_hdr_t;
+
+static inline uint16_t be16_to_cpu(uint16_t x) { return (uint16_t)((x >> 8) | (x << 8)); }
+static inline uint16_t cpu_to_be16(uint16_t x) { return (uint16_t)((x >> 8) | (x << 8)); }
+
+// Simple networking loop: poll NIC, log frames, echo custom ethertype 0x88B5
+void network_loop(void) {
+    serial_write("network_loop: Entering polling loop\n");
+    char buffer[NETWORK_BUFFER_SIZE];
+    size_t length = 0;
+
+    while (1) {
+        if (network_receive_packet(buffer, &length) == 0 && length >= sizeof(eth_hdr_t)) {
+            eth_hdr_t* hdr = (eth_hdr_t*)buffer;
+            uint16_t et = be16_to_cpu(hdr->ethertype);
+
+            // Log basic info
+            serial_write("network_loop: Received frame, ethertype=0x");
+            char info[64];
+            snprintf(info, sizeof(info), "%04x, len=%zu\n", (unsigned)et, length);
+            serial_write(info);
+
+            // If custom demo EtherType, echo back the same payload
+            if (et == 0x88B5) {
+                // Swap MAC addresses
+                uint8_t tmp[6];
+                for (int i = 0; i < 6; i++) tmp[i] = hdr->dst[i];
+                for (int i = 0; i < 6; i++) hdr->dst[i] = hdr->src[i];
+                for (int i = 0; i < 6; i++) hdr->src[i] = tmp[i];
+
+                // Send it back
+                if (network_send_packet(buffer, length) == 0) {
+                    serial_write("network_loop: Echoed custom frame\n");
+                } else {
+                    serial_write("network_loop: Failed to send echo\n");
+                }
+            }
+        }
+
+        // Idle a bit: simple pause to reduce busy spin
+        __asm__("hlt");
+    }
+}

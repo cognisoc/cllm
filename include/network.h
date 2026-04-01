@@ -37,4 +37,7 @@ int http_parse_request(const char* raw_request, size_t length, http_request_t* r
 int http_generate_response(const http_response_t* response, char* buffer, size_t* length);
 int route_request(http_request_t* request, http_response_t* response);
 
+// Simple networking loop (polls NIC, logs frames, optional echo)
+void network_loop(void);
+
 #endif
