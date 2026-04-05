@@ -1,8 +1,8 @@
 /*
- * boot.S - Simplified bootloader for QEMU compatibility
+ * minimal_boot.S - Minimal bootloader for QEMU testing
  */
 
-# Multiboot header - simplified for QEMU
+# Multiboot header
 .section .multiboot
 .align 4
 
@@ -11,19 +11,19 @@
 .long 0x00000003                   # Flags (page align + memory info)
 .long -(0x1BADB002 + 0x00000003)   # Checksum
 
-# Stack section - larger stack for debugging
+# Stack section
 .section .bss
 .align 16
 stack_bottom:
-.skip 65536  # 64KB stack
+.skip 16384  # 16KB stack
 stack_top:
 
 # Text section
 .section .text
 .global _start
-.global kernel_main
+.extern kernel_main
 
-# Entry point - QEMU compatible
+# Entry point
 _start:
     # Set up stack pointer
     mov $stack_top, %esp

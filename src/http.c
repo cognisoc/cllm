@@ -7,6 +7,47 @@
 
 #include <stdbool.h>
 
+// Helper: case-insensitive string prefix comparison
+static bool str_starts_with_ci(const char* str, const char* prefix) {
+    while (*prefix) {
+        char c1 = *str;
+        char c2 = *prefix;
+        // Convert to lowercase
+        if (c1 >= 'A' && c1 <= 'Z') c1 += 32;
+        if (c2 >= 'A' && c2 <= 'Z') c2 += 32;
+        if (c1 != c2) return false;
+        str++;
+        prefix++;
+    }
+    return true;
+}
+
+// Parse a single header and extract known values
+static void parse_header(const char* header, size_t len, http_request_t* request) {
+    // Check for Content-Length
+    if (str_starts_with_ci(header, "Content-Length:")) {
+        const char* value = header + 15;
+        while (*value == ' ') value++;
+        request->content_length = 0;
+        while (*value >= '0' && *value <= '9') {
+            request->content_length = request->content_length * 10 + (*value - '0');
+            value++;
+        }
+    }
+    // Check for Content-Type
+    else if (str_starts_with_ci(header, "Content-Type:")) {
+        const char* value = header + 13;
+        while (*value == ' ') value++;
+        size_t i = 0;
+        while (value[i] && value[i] != '\r' && value[i] != '\n' &&
+               value[i] != ';' && i < sizeof(request->content_type) - 1) {
+            request->content_type[i] = value[i];
+            i++;
+        }
+        request->content_type[i] = '\0';
+    }
+}
+
 // Parse HTTP request line
 static int parse_request_line(const char* line, http_request_t* request) {
     // Find first space (separates method from path)
@@ -66,7 +107,9 @@ int http_parse_request(const char* raw_request, size_t length, http_request_t* r
     request->headers[0] = '\0';
     request->body[0] = '\0';
     request->body_length = 0;
-    
+    request->content_type[0] = '\0';
+    request->content_length = 0;
+
     // Find end of request line (first \r\n)
     size_t line_end = 0;
     while (line_end + 1 < length) {
@@ -75,11 +118,11 @@ int http_parse_request(const char* raw_request, size_t length, http_request_t* r
         }
         line_end++;
     }
-    
+
     if (line_end + 1 >= length) {
         return -1; // No request line found
     }
-    
+
     // Parse request line
     char request_line[256];
     if (line_end >= sizeof(request_line)) {
@@ -87,24 +130,85 @@ int http_parse_request(const char* raw_request, size_t length, http_request_t* r
     }
     strncpy(request_line, raw_request, line_end);
     request_line[line_end] = '\0';
-    
+
     if (parse_request_line(request_line, request) != 0) {
         return -1; // Failed to parse request line
     }
-    
-    // For now, we'll just copy the rest as headers
-    // In a full implementation, we would parse headers properly
-    size_t headers_start = line_end + 2; // Skip \r\n
-    size_t headers_length = length - headers_start;
-    
+
+    // Parse headers and find body
+    size_t pos = line_end + 2; // Skip first \r\n
+    size_t headers_start = pos;
+    size_t body_start = 0;
+
+    // Find end of headers (empty line: \r\n\r\n)
+    while (pos + 1 < length) {
+        if (raw_request[pos] == '\r' && raw_request[pos + 1] == '\n') {
+            // Check if this is the end of headers (double CRLF)
+            if (pos + 3 < length && raw_request[pos + 2] == '\r' && raw_request[pos + 3] == '\n') {
+                body_start = pos + 4;
+                break;
+            }
+            // Parse this header line
+            size_t header_start = headers_start;
+            while (header_start < pos) {
+                size_t header_end = header_start;
+                while (header_end < pos && !(raw_request[header_end] == '\r' && raw_request[header_end + 1] == '\n')) {
+                    header_end++;
+                }
+                if (header_end > header_start) {
+                    parse_header(raw_request + header_start, header_end - header_start, request);
+                }
+                header_start = header_end + 2; // Skip \r\n
+            }
+            headers_start = pos + 2;
+        }
+        pos++;
+    }
+
+    // If no double CRLF found, treat entire remainder as headers
+    if (body_start == 0) {
+        body_start = length;
+    }
+
+    // Copy headers
+    size_t headers_length = body_start > headers_start + 4 ? body_start - headers_start - 4 : 0;
     if (headers_length > 0) {
         if (headers_length >= sizeof(request->headers)) {
             headers_length = sizeof(request->headers) - 1;
         }
-        strncpy(request->headers, raw_request + headers_start, headers_length);
+        strncpy(request->headers, raw_request + line_end + 2, headers_length);
         request->headers[headers_length] = '\0';
     }
-    
+
+    // Parse any remaining headers
+    const char* h = request->headers;
+    while (*h) {
+        const char* line_start = h;
+        while (*h && !(*h == '\r' || *h == '\n')) h++;
+        if (h > line_start) {
+            parse_header(line_start, h - line_start, request);
+        }
+        while (*h == '\r' || *h == '\n') h++;
+    }
+
+    // Copy body if present
+    if (body_start < length) {
+        size_t body_len = length - body_start;
+
+        // Use Content-Length if available, otherwise use remaining data
+        if (request->content_length > 0 && request->content_length < body_len) {
+            body_len = request->content_length;
+        }
+
+        if (body_len >= sizeof(request->body)) {
+            body_len = sizeof(request->body) - 1;
+        }
+
+        strncpy(request->body, raw_request + body_start, body_len);
+        request->body[body_len] = '\0';
+        request->body_length = body_len;
+    }
+
     return 0;
 }
 
@@ -113,15 +217,32 @@ int http_generate_response(const http_response_t* response, char* buffer, size_t
     // Format status line
     char status_line[64];
     int status_len;
-    
-    if (response->status_code == 200) {
-        status_len = snprintf(status_line, sizeof(status_line), "HTTP/1.1 200 OK\r\n");
-    } else if (response->status_code == 404) {
-        status_len = snprintf(status_line, sizeof(status_line), "HTTP/1.1 404 Not Found\r\n");
-    } else if (response->status_code == 500) {
-        status_len = snprintf(status_line, sizeof(status_line), "HTTP/1.1 500 Internal Server Error\r\n");
-    } else {
-        status_len = snprintf(status_line, sizeof(status_line), "HTTP/1.1 200 OK\r\n");
+
+    switch (response->status_code) {
+        case 200:
+            status_len = snprintf(status_line, sizeof(status_line), "HTTP/1.1 200 OK\r\n");
+            break;
+        case 400:
+            status_len = snprintf(status_line, sizeof(status_line), "HTTP/1.1 400 Bad Request\r\n");
+            break;
+        case 404:
+            status_len = snprintf(status_line, sizeof(status_line), "HTTP/1.1 404 Not Found\r\n");
+            break;
+        case 405:
+            status_len = snprintf(status_line, sizeof(status_line), "HTTP/1.1 405 Method Not Allowed\r\n");
+            break;
+        case 422:
+            status_len = snprintf(status_line, sizeof(status_line), "HTTP/1.1 422 Unprocessable Entity\r\n");
+            break;
+        case 500:
+            status_len = snprintf(status_line, sizeof(status_line), "HTTP/1.1 500 Internal Server Error\r\n");
+            break;
+        case 503:
+            status_len = snprintf(status_line, sizeof(status_line), "HTTP/1.1 503 Service Unavailable\r\n");
+            break;
+        default:
+            status_len = snprintf(status_line, sizeof(status_line), "HTTP/1.1 200 OK\r\n");
+            break;
     }
     
     // Copy status line to buffer

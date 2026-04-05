@@ -1,4 +1,4 @@
-/* Linker script for QEMU-compatible unikernel */
+/* Minimal linker script for QEMU testing */
 ENTRY(_start)
 
 SECTIONS

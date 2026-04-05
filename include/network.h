@@ -11,21 +11,27 @@
 // Network buffer size
 #define NETWORK_BUFFER_SIZE 2048
 
+// HTTP buffer sizes for API payloads
+#define HTTP_REQUEST_BODY_SIZE  8192   // 8KB for larger prompts
+#define HTTP_RESPONSE_BODY_SIZE 16384  // 16KB for responses
+
 // HTTP request structure
 typedef struct {
     char method[16];
-    char path[128];
+    char path[256];                         // Increased for query params
     char version[16];
-    char headers[512];
-    char body[1024];
+    char headers[1024];                     // Increased for more headers
+    char body[HTTP_REQUEST_BODY_SIZE];
     size_t body_length;
+    char content_type[64];                  // Parsed Content-Type header
+    size_t content_length;                  // Parsed Content-Length value
 } http_request_t;
 
 // HTTP response structure
 typedef struct {
     int status_code;
-    char headers[512];
-    char body[2048];
+    char headers[1024];
+    char body[HTTP_RESPONSE_BODY_SIZE];
     size_t body_length;
 } http_response_t;
 
