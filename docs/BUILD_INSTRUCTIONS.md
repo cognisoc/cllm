@@ -2,77 +2,76 @@
 
 ## Prerequisites
 
-- GCC with 32-bit and 64-bit support
-- Zig compiler (optional, for enhanced features)
-- QEMU (for testing)
-- Standard build tools (make, ld, etc.)
+- GCC with 32-bit support (`gcc -m32`)
+- GNU linker (`ld`)
+- QEMU (`qemu-system-i386`)
+- make
 
-## Building the Kernel
+On Debian/Ubuntu:
 
-### Quick Build
 ```bash
-cd build
-./build.sh
+sudo apt-get install gcc gcc-multilib make qemu-system-x86
 ```
 
-This will create `kernel.bin` in the build directory.
+## Building
 
-### 32-bit Build
 ```bash
-cd build
-./build32.sh
+make            # release build
+make debug      # debug build with symbols
+make clean      # remove build artifacts
 ```
 
-This will create `kernel32.bin` in the build directory.
+The build produces `build/kernel.bin`, a 32-bit Multiboot ELF kernel.
 
-### Simple Test Kernel
+## Running in QEMU
+
 ```bash
-cd build
-./build_simple.sh
+make run        # serial output on terminal (headless)
+make run-vga    # opens QEMU window with VGA display
+make run-debug  # paused for GDB on port 1234
 ```
 
-This will create `simple_kernel.bin` in the build directory.
+Or manually:
 
-## Testing
-
-### Running in QEMU
 ```bash
-# For 32-bit kernel
-qemu-system-i386 -kernel kernel32.bin
-
-# For 64-bit kernel (if supported)
-qemu-system-x86_64 -kernel kernel.bin
+qemu-system-i386 -kernel build/kernel.bin -serial stdio -display none -no-reboot -m 128M
 ```
 
-Note: Due to bootloader implementation issues, the kernel may not produce visible output in QEMU.
+## Expected Output
+
+On boot, serial output shows kernel initialization:
+
+```
+BOOT
+KERNEL: Serial port initialized
+KERNEL: Memory management system initialized
+KERNEL: VGA initialized
+KERNEL: Hello from our custom unikernel!
+KERNEL: Network initialized successfully
+KERNEL: All tests completed. Entering network loop...
+```
 
 ## Project Structure
 
-- `src/` - Source code (C and Zig)
+- `src/` - C and Zig source files
 - `include/` - Header files
-- `build/` - Build scripts and output
+- `build/` - Build scripts, linker script, output artifacts
 - `docs/` - Documentation
 
 ## Key Components
 
-1. **Bootloader** (`boot.S`) - Multiboot-compliant bootloader
-2. **Kernel** (`kernel.c`) - Main kernel implementation
-3. **String Utilities** (`string.c`) - Custom string functions
-4. **HTTP Server** (`http.c`) - HTTP request/response handling
-5. **API Handlers** (`api.c`) - REST API endpoints
-6. **Model Interface** (`c_model_interface.c`) - Model loading and validation
+1. **Bootloader** (`src/boot.S`) - Multiboot-compliant entry point
+2. **Kernel** (`src/kernel.c`) - VGA, serial, initialization
+3. **String/Memory** (`src/string.c`, `src/memory.c`) - libc subset
+4. **HTTP Server** (`src/http.c`, `src/api.c`) - REST API framework
+5. **Network** (`src/network.c`, `src/network/`) - PCI + e1000 NIC driver
+6. **LLM Interface** (`src/llm.c`, `src/c_model_interface.c`) - Model loading
 
-## Troubleshooting
+## Debugging
 
-1. If you see "undefined reference to `strlen`" errors, make sure all object files are rebuilt
-2. If the kernel hangs in QEMU, check the bootloader implementation
-3. For 64-bit builds, ensure your system supports 64-bit compilation
+Attach GDB to a running debug kernel:
 
-## Future Enhancements
-
-1. Add actual LLM model loading and inference
-2. Implement proper memory management
-3. Add network stack for remote model serving
-4. Integrate with real GGUF model files
-5. Add support for streaming responses
-6. Implement model validation with actual checksums
+```bash
+make run-debug &
+gdb build/kernel.bin -ex "target remote :1234"
+```

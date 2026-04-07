@@ -1,127 +1,93 @@
-# C Unikernel for LLM Serving (Enhanced Architecture)
+# CLLM
 
-This project implements a high-performance C unikernel for serving large language models with enhanced architecture features:
+**A bare-metal C unikernel for serving large language models -- no OS, no overhead.**
 
-1. **Zig for Higher-Level Components**: Leveraging Zig's safety features for HTTP API and LLM interface
-2. **Multi-Threading by Default**: Concurrent request handling with thread pools
-3. **Baked-In Model Files**: Models embedded directly in executable for maximum performance
-4. **GPU Acceleration Support**: CUDA backend integration for hardware acceleration
-5. **Replicated llama.cpp HTTP API**: Full compatibility with llama.cpp REST API
+[![Build](https://github.com/Skelf-Research/cllm/actions/workflows/build.yml/badge.svg)](https://github.com/Skelf-Research/cllm/actions)
+[![License](https://img.shields.io/github/license/Skelf-Research/cllm)](LICENSE)
+![Platform](https://img.shields.io/badge/platform-x86-blue)
+![Language](https://img.shields.io/badge/language-C-lightgrey)
 
-## Enhanced Architecture Features
+## What is CLLM?
 
-### Zig Integration
-- **Memory Safety**: Zig's compile-time safety checks prevent common bugs
-- **Error Handling**: Explicit error return types with no hidden exceptions
-- **Concurrency**: Built-in async/await and threading support
-- **Performance**: Zero-cost abstractions with no runtime overhead
+CLLM is a Multiboot-compliant unikernel written in C that boots directly on bare metal (or in QEMU) and serves LLM inference over HTTP. It eliminates the operating system layer entirely -- the kernel *is* the application.
 
-### Multi-Threading
-- **Thread Pool**: Fixed-size pool for efficient request processing
-- **Async/Await**: Non-blocking operations for maximum efficiency
-- **Lock-Free Queues**: For request and task management
-- **Work Stealing**: Efficient load distribution across cores
+The kernel includes a custom libc subset, PCI bus enumeration, an Intel e1000 NIC driver, an HTTP server with REST API endpoints, and a model loading interface compatible with llama.cpp.
 
-### Baked-In Models
-- **Zero File I/O**: Models embedded directly in executable
-- **Direct Memory Access**: Immediate availability with zero loading time
-- **Security**: Immutable models with reduced attack surface
-- **Performance**: Eliminate disk access during runtime
+## Quick Start
 
-### GPU Acceleration
-- **CUDA Backend**: Full CUDA support for NVIDIA GPUs
-- **Hardware Acceleration**: 5-10x faster inference for large models
-- **Seamless Integration**: Automatic CPU/GPU switching
-- **Performance Optimization**: Optimized kernels for LLM operations
-
-## Project Goals
-
-1. Create a working C unikernel in QEMU targeting x86_64 with comprehensive Zig integration
-2. Compile llama.cpp into the unikernel to serve models over HTTP with JSON-based configuration
-3. Add GPU support to the unikernel, supporting all backends as done by llama.cpp
-4. Port optimizations from vLLM into llama.cpp to accelerate serving of transformer models
-
-## Current Status
-
-We have successfully completed the foundational and enhancement planning phases of our project:
-
-### ✅ Phase 1: Foundation Components - COMPLETED
-- **Bootstrap Implementation**: Custom bootloader using multiboot specification
-- **Kernel Services**: Basic VGA text output, memory management, I/O handling
-- **HTTP Server Framework**: API routing, request handling, response formatting
-- **Build System**: Comprehensive build scripts for hybrid C/Zig compilation
-- **Testing Framework**: Automated tests and QEMU verification
-
-### ✅ Phase 2: Enhanced Architecture Planning - COMPLETED
-- **Architecture Design**: Comprehensive enhanced architecture with documentation
-- **Compile-Time Optimization**: Everything baked in at compile time
-- **Multi-Backend GPU Support**: CUDA, Metal, and Vulkan support planned
-- **Memory Safety**: Zig integration for memory-safe higher-level components
-- **Performance Optimization**: Zero-copy operations, custom allocators, batching
-
-### ✅ Phase 3: Comprehensive Zig Integration - IN PROGRESS
-- **C Bindings**: Complete C/Zig interop layer implemented ✅
-- **Callback Mechanisms**: Bidirectional communication between C and Zig ✅
-- **Memory Management**: Cross-language memory management established ✅
-- **Build Scripts**: Hybrid compilation system working correctly ✅
-- **Model Embedding Architecture**: Designed and partially implemented ✅
-- **Basic Model Embedding**: Implemented in Zig ✅
-- **C Interface for Embedded Models**: Created and tested ✅
-- **Model Integrity Verification**: Added and tested ✅
-- **Compile-Time Configuration**: Implemented with type-safe validation ✅
-- **Conditional Compilation Features**: Implemented with feature flags ✅
-
-## Enhanced Architecture Documentation
-
-See the `docs/` folder for detailed documentation on the enhanced architecture:
-- [Complete Architecture Summary](docs/complete_architecture_summary.md)
-- [Target Architecture](docs/target_architecture.md)
-- [Comprehensive Zig Integration Architecture](docs/enhanced_architecture_comprehensive_zig.md)
-- [Zig Integration Opportunities](docs/zig_integration_opportunities.md)
-- [Zig-Based HTTP API Design](docs/zig_http_server_design.md)
-- [Baked Model Implementation](docs/baked_model_implementation.md)
-- [GPU Backend Analysis](docs/gpu_backend_analysis.md)
-- [llama.cpp API Analysis](docs/llama_cpp_api_analysis.md)
-- [Enhanced Implementation Roadmap](docs/enhanced_roadmap.md)
-- [Enhanced Architecture Summary](docs/enhanced_summary.md)
-- [Architecture Diagram](docs/architecture_diagram.md)
-- [Project Roadmap](docs/project_roadmap.md)
-- [Enhanced Implementation Progress Summary](docs/enhanced_implementation_progress_summary.md)
-
-## Original Documentation
-
-See the `docs/` folder for original project documentation:
-- [Project Specification](docs/specs.md)
-- [Architecture Overview](docs/architecture.md)
-- [Unikernel Research](docs/unikernel_research.md)
-- [Custom Unikernel Approach](docs/custom_unikernel_approach.md)
-- [Zig Approach](docs/zig_approach.md)
-- [llama.cpp Integration](docs/llama_integration.md)
-- [HTTP Server Plan](docs/http_server_plan.md)
-- [Progress Summary](docs/progress_summary.md)
-- [Final Summary](docs/final_summary.md)
-
-## Building and Running
-
-To build the unikernel:
 ```bash
-cd build
-./build.sh
+# Prerequisites: gcc (with -m32 support), make, qemu-system-i386
+sudo apt-get install gcc gcc-multilib make qemu-system-x86
+
+# Build and run
+git clone git@github.com:Skelf-Research/cllm.git
+cd cllm
+make run
 ```
 
-The build process will create `kernel.bin` in the build directory, which is a self-contained unikernel binary that includes all necessary components.
+Serial output appears on your terminal. Press `Ctrl-A X` to exit QEMU.
 
-Note: Due to bootloader implementation complexities, running the kernel in QEMU may require additional configuration. Refer to the docs/BUILD_INSTRUCTIONS.md file for detailed guidance on testing the kernel.
+## Make Targets
 
-## Directory Structure
+| Target | Description |
+|---|---|
+| `make` | Build release kernel (`build/kernel.bin`) |
+| `make debug` | Build with debug symbols |
+| `make run` | Build and boot in QEMU (serial on stdio) |
+| `make run-vga` | Build and boot in QEMU (VGA window) |
+| `make run-debug` | Build and boot paused for GDB on `:1234` |
+| `make clean` | Remove build artifacts |
 
-- `src/` - Source code (C and Zig)
-- `include/` - Header files
-- `docs/` - Documentation
-- `tests/` - Test cases
-- `build/` - Build artifacts
-- `llama.cpp/` - llama.cpp library files
+## Architecture
 
-## Contributing
+```
++-----------------------------------------------------------+
+|  QEMU / Bare Metal  (x86, Multiboot)                     |
++-----------------------------------------------------------+
+|  boot.S             Multiboot entry, stack, serial init   |
+|  kernel.c           Kernel main, VGA terminal, serial I/O |
+|  memory.c           Heap allocator (malloc/free)          |
+|  string.c           libc subset (snprintf, memcpy, ...)   |
+|  network.c          PCI enumeration + e1000 NIC driver    |
+|  http.c / api.c     HTTP server, request routing          |
+|  api_v1.c           llama.cpp-compatible REST API         |
+|  llm.c              Model loading and inference interface |
++-----------------------------------------------------------+
+```
 
-This project is under active development. Please see the [Enhanced Implementation Roadmap](docs/enhanced_roadmap.md) for details on planned work and how to contribute.
+The kernel boots via Multiboot, initializes serial and VGA output, brings up an e1000 network interface via PCI, and enters a packet-processing loop that serves HTTP requests for LLM inference.
+
+## Project Structure
+
+```
+src/            C source files (kernel, drivers, HTTP, LLM)
+include/        Header files
+build/          Build scripts, linker script, artifacts
+docs/           Architecture and design documentation
+llama.cpp/      llama.cpp headers for model integration
+```
+
+## Roadmap
+
+- [x] Multiboot kernel with VGA + serial output
+- [x] Custom libc (malloc, snprintf, string ops)
+- [x] PCI enumeration and e1000 NIC driver
+- [x] HTTP server with REST API endpoints
+- [x] llama.cpp-compatible API (v1 endpoints)
+- [ ] Integrate llama.cpp inference engine
+- [ ] GPU passthrough (CUDA backend)
+- [ ] Streaming token generation
+- [ ] vLLM optimizations for transformer serving
+
+## Documentation
+
+- [Architecture Overview](docs/architecture.md)
+- [Build Instructions](docs/BUILD_INSTRUCTIONS.md)
+- [Project Specification](docs/specs.md)
+- [GPU Backend Analysis](docs/gpu_backend_analysis.md)
+- [llama.cpp Integration Plan](docs/llama_integration.md)
+- [HTTP Server Design](docs/http_server_plan.md)
+
+## License
+
+See [LICENSE](LICENSE) for details.

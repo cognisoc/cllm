@@ -11,7 +11,7 @@ INCLUDE_DIR="${PROJECT_ROOT}/include"
 
 # Build modes
 BUILD_MODE="release"  # Can be "debug" or "release"
-TARGET_ARCH="x86_64"  # Target architecture
+TARGET_ARCH="i386"  # Target architecture
 
 # Colors for output
 RED='\033[0;31m'

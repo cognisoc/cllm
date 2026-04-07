@@ -251,7 +251,7 @@ static void append_str(char* dst, size_t size, size_t* off, const char* s) {
     }
 }
 
-static void append_uint(char* dst, size_t size, size_t* off, unsigned long long v, int base, int is_upper) {
+static void append_uint(char* dst, size_t size, size_t* off, unsigned long v, int base, int is_upper) {
     char buf[32];
     const char* digits = is_upper ? "0123456789ABCDEF" : "0123456789abcdef";
     int i = 0;
@@ -282,8 +282,8 @@ int vsnprintf(char* str, size_t size, const char* format, va_list ap) {
             append_str(str, size, &off, s);
         } else if (format[i] == 'd' || format[i] == 'i') {
             int v = va_arg(ap, int);
-            if (v < 0) { append_char(str, size, &off, '-'); append_uint(str, size, &off, (unsigned long long)(-(long long)v), 10, 0); }
-            else { append_uint(str, size, &off, (unsigned long long)v, 10, 0); }
+            if (v < 0) { append_char(str, size, &off, '-'); append_uint(str, size, &off, (unsigned long)(-(long)v), 10, 0); }
+            else { append_uint(str, size, &off, (unsigned long)v, 10, 0); }
         } else if (format[i] == 'u') {
             unsigned int v = va_arg(ap, unsigned int);
             append_uint(str, size, &off, v, 10, 0);
@@ -294,13 +294,13 @@ int vsnprintf(char* str, size_t size, const char* format, va_list ap) {
             unsigned int v = va_arg(ap, unsigned int);
             append_uint(str, size, &off, v, 16, 1);
         } else if (format[i] == 'p') {
-            unsigned long long v = (unsigned long long)(uintptr_t)va_arg(ap, void*);
+            unsigned long v = (unsigned long)(uintptr_t)va_arg(ap, void*);
             append_str(str, size, &off, "0x");
             append_uint(str, size, &off, v, 16, 0);
         } else if (format[i] == 'z' && format[i+1] == 'u') {
             i++;
             size_t v = va_arg(ap, size_t);
-            append_uint(str, size, &off, (unsigned long long)v, 10, 0);
+            append_uint(str, size, &off, (unsigned long)v, 10, 0);
         } else if (format[i] == '%') {
             append_char(str, size, &off, '%');
         } else {

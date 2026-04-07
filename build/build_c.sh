@@ -65,10 +65,10 @@ done
 
 # Determine compiler flags based on build mode
 if [[ "${BUILD_MODE}" == "debug" ]]; then
-    CFLAGS="-g -O0 -Wall -Wextra -I${INCLUDE_DIR} -fno-stack-protector"
+    CFLAGS="-g -O0 -Wall -Wextra -I${INCLUDE_DIR} -fno-stack-protector -ffreestanding"
     print_info "Building in debug mode"
 else
-    CFLAGS="-O2 -Wall -Wextra -I${INCLUDE_DIR} -fno-stack-protector"
+    CFLAGS="-O2 -Wall -Wextra -I${INCLUDE_DIR} -fno-stack-protector -ffreestanding"
     print_info "Building in release mode"
 fi
 

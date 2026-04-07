@@ -13,9 +13,13 @@ Thumbs.db
 # Build artifacts
 build/c_objects/
 build/zig_objects/
+build/zig-cache/
 build/*.o
 build/*.bin
+*.o
 
 # Model files
 *.gguf
-test_model.gguf
+
+# Test binaries
+test_model_*

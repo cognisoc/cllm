@@ -1,4 +1,5 @@
 /* Linker script for QEMU-compatible unikernel */
+OUTPUT_FORMAT(elf32-i386)
 ENTRY(_start)
 
 SECTIONS
@@ -6,19 +7,17 @@ SECTIONS
     /* Multiboot requires kernel to be loaded at 1MB */
     . = 0x00100000;
 
-    /* Multiboot header must be in first 8KB */
-    .multiboot : {
+    /* Text section - multiboot header must be within first 8KB */
+    .text ALIGN(4) : {
         *(.multiboot)
-    }
-
-    /* Text section */
-    .text : {
         *(.text)
+        *(.text.*)
     }
 
     /* Read-only data */
     .rodata : {
         *(.rodata)
+        *(.rodata.*)
     }
 
     /* Data section */
