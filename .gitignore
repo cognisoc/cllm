@@ -23,3 +23,6 @@ build/*.bin
 
 # Test binaries
 test_model_*
+
+# MkDocs build output
+documentation/site/

@@ -2,8 +2,8 @@
 
 **A bare-metal C unikernel for serving large language models -- no OS, no overhead.**
 
-[![Build](https://github.com/Skelf-Research/cllm/actions/workflows/build.yml/badge.svg)](https://github.com/Skelf-Research/cllm/actions)
-[![License](https://img.shields.io/github/license/Skelf-Research/cllm)](LICENSE)
+[![Build](https://github.com/cognisoc/cllm/actions/workflows/build.yml/badge.svg)](https://github.com/cognisoc/cllm/actions)
+[![License](https://img.shields.io/github/license/cognisoc/cllm)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-x86-blue)
 ![Language](https://img.shields.io/badge/language-C-lightgrey)
 
@@ -20,7 +20,7 @@ The kernel includes a custom libc subset, PCI bus enumeration, an Intel e1000 NI
 sudo apt-get install gcc gcc-multilib make qemu-system-x86
 
 # Build and run
-git clone git@github.com:Skelf-Research/cllm.git
+git clone git@github.com:cognisoc/cllm.git
 cd cllm
 make run
 ```
@@ -63,7 +63,7 @@ The kernel boots via Multiboot, initializes serial and VGA output, brings up an 
 src/            C source files (kernel, drivers, HTTP, LLM)
 include/        Header files
 build/          Build scripts, linker script, artifacts
-docs/           Architecture and design documentation
+documentation/  MkDocs documentation site
 llama.cpp/      llama.cpp headers for model integration
 ```
 
@@ -81,12 +81,12 @@ llama.cpp/      llama.cpp headers for model integration
 
 ## Documentation
 
-- [Architecture Overview](docs/architecture.md)
-- [Build Instructions](docs/BUILD_INSTRUCTIONS.md)
-- [Project Specification](docs/specs.md)
-- [GPU Backend Analysis](docs/gpu_backend_analysis.md)
-- [llama.cpp Integration Plan](docs/llama_integration.md)
-- [HTTP Server Design](docs/http_server_plan.md)
+- [Architecture Overview](documentation/docs/architecture/overview.md)
+- [Getting Started](documentation/docs/getting-started.md)
+- [Project Specification](documentation/docs/specification.md)
+- [GPU Backend Analysis](documentation/docs/architecture/gpu-backend.md)
+- [llama.cpp Integration](documentation/docs/design/llama-integration.md)
+- [HTTP Server Design](documentation/docs/design/http-server.md)
 
 ## License
 
