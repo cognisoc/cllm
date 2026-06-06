@@ -1,8 +1,9 @@
 site_name: CLLM
 site_description: A bare-metal C unikernel for serving large language models
-site_url: https://cognisoc.github.io/cllm
+site_url: https://docs.cognisoc.com/cllm/
 repo_url: https://github.com/cognisoc/cllm
 repo_name: cognisoc/cllm
+edit_uri: edit/main/documentation/docs/
 
 theme:
   name: material
