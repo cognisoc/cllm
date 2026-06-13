@@ -2,6 +2,13 @@
 OUTPUT_FORMAT(elf32-i386)
 ENTRY(_start)
 
+PHDRS
+{
+    text PT_LOAD FLAGS(5); /* RX */
+    rodata PT_LOAD FLAGS(4); /* R */
+    data PT_LOAD FLAGS(6); /* RW */
+}
+
 SECTIONS
 {
     /* Multiboot requires kernel to be loaded at 1MB */
@@ -12,25 +19,25 @@ SECTIONS
         *(.multiboot)
         *(.text)
         *(.text.*)
-    }
+    } :text
 
     /* Read-only data */
-    .rodata : {
+    .rodata ALIGN(4) : {
         *(.rodata)
         *(.rodata.*)
-    }
+    } :rodata
 
     /* Data section */
-    .data : {
+    .data ALIGN(4) : {
         *(.data)
-    }
+    } :data
 
     /* BSS section - zero-initialized data */
-    .bss : {
+    .bss ALIGN(4) : {
         __bss_start = .;
         *(.bss)
         __bss_end = .;
-    }
+    } :data
 
     /* Discard unnecessary sections */
     /DISCARD/ : {

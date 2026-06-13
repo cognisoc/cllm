@@ -2,6 +2,9 @@
  * boot.S - Simplified bootloader for QEMU compatibility
  */
 
+# Mark the object as not requiring an executable stack.
+.section .note.GNU-stack, "", @progbits
+
 # Multiboot header - simplified for QEMU
 .section .multiboot
 .align 4

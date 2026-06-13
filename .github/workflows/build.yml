@@ -1,0 +1,39 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc gcc-multilib make qemu-system-x86
+
+      - name: Build kernel
+        run: make
+
+      - name: Run host unit tests
+        run: ./tests/host/run_tests.sh
+
+      - name: QEMU smoke test
+        run: |
+          set -e
+          timeout 15 qemu-system-i386 \
+            -kernel build/kernel.bin \
+            -serial stdio \
+            -display none \
+            -no-reboot \
+            -m 128M 2&1 | tee qemu.log || true
+          grep -q "KERNEL: CLLM unikernel booting" qemu.log
+          grep -q "KERNEL: Self-tests passed" qemu.log
+          grep -q "KERNEL: Entering network loop" qemu.log
+          echo "QEMU smoke test passed"

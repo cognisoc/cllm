@@ -108,6 +108,7 @@ int llm_detokenize(llm_context_t* ctx, const int* tokens, int token_count, char*
 
 // Evaluate tokens (placeholder implementation)
 int llm_eval(llm_context_t* ctx, const int* tokens, int token_count, int n_threads) {
+    (void)n_threads;
     if (!ctx || !tokens || token_count <= 0) {
         return -1;
     }

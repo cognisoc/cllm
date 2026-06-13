@@ -13,7 +13,7 @@ QEMU_FLAGS ?= -kernel $(BUILD_DIR)/kernel.bin -serial stdio -display none -no-re
 .DEFAULT_GOAL := all
 
 # Phony targets
-.PHONY: all clean debug release run run-vga run-debug help
+.PHONY: all clean debug release run run-vga run-debug test help
 
 # All targets
 all: release
@@ -31,7 +31,7 @@ debug:
 # Clean build artifacts (preserves build scripts)
 clean:
 	@echo "Cleaning build artifacts..."
-	@rm -rf $(BUILD_DIR)/c_objects $(BUILD_DIR)/zig_objects $(BUILD_DIR)/zig-cache $(BUILD_DIR)/kernel.bin $(BUILD_DIR)/kernel32.bin $(BUILD_DIR)/minimal_kernel.bin
+	@rm -rf $(BUILD_DIR)/c_objects $(BUILD_DIR)/zig_objects $(BUILD_DIR)/zig-cache $(BUILD_DIR)/kernel.bin $(BUILD_DIR)/kernel32.bin $(BUILD_DIR)/minimal_kernel.bin $(BUILD_DIR)/test_*
 	@echo "Clean completed."
 
 # Boot kernel in QEMU (serial output on terminal)
@@ -49,6 +49,10 @@ run-debug: debug
 	@echo "Booting kernel in QEMU (waiting for GDB on :1234)..."
 	$(QEMU) $(QEMU_FLAGS) -s -S
 
+# Run host-side unit tests
+test:
+	@./tests/host/run_tests.sh
+
 # Help
 help:
 	@echo "Available targets:"
@@ -59,4 +63,5 @@ help:
 	@echo "  run        - Build and boot in QEMU (serial output)"
 	@echo "  run-vga    - Build and boot in QEMU (VGA window)"
 	@echo "  run-debug  - Build debug and boot paused for GDB on :1234"
+	@echo "  test       - Run host-side unit tests"
 	@echo "  help       - Show this help message"

@@ -19,10 +19,12 @@ The kernel includes a custom libc subset, PCI bus enumeration, an Intel e1000 NI
 # Prerequisites: gcc (with -m32 support), make, qemu-system-i386
 sudo apt-get install gcc gcc-multilib make qemu-system-x86
 
-# Build and run
+# Build and run tests
 git clone git@github.com:cognisoc/cllm.git
 cd cllm
-make run
+make
+make test
+make run        # requires QEMU
 ```
 
 Serial output appears on your terminal. Press `Ctrl-A X` to exit QEMU.
@@ -36,22 +38,24 @@ Serial output appears on your terminal. Press `Ctrl-A X` to exit QEMU.
 | `make run` | Build and boot in QEMU (serial on stdio) |
 | `make run-vga` | Build and boot in QEMU (VGA window) |
 | `make run-debug` | Build and boot paused for GDB on `:1234` |
+| `make test` | Run host-side unit tests |
 | `make clean` | Remove build artifacts |
 
 ## Architecture
 
 ```
 +-----------------------------------------------------------+
-|  QEMU / Bare Metal  (x86, Multiboot)                     |
+|  QEMU / Bare Metal  (x86, Multiboot)                      |
 +-----------------------------------------------------------+
 |  boot.S             Multiboot entry, stack, serial init   |
 |  kernel.c           Kernel main, VGA terminal, serial I/O |
-|  memory.c           Heap allocator (malloc/free)          |
+|  allocator.c        Heap allocator (malloc/free)          |
+|  memory.c           Memory management initialization      |
 |  string.c           libc subset (snprintf, memcpy, ...)   |
-|  network.c          PCI enumeration + e1000 NIC driver    |
-|  http.c / api.c     HTTP server, request routing          |
-|  api_v1.c           llama.cpp-compatible REST API         |
-|  llm.c              Model loading and inference interface |
+|  network.c          PCI enumeration + e1000 NIC driver      |
+|  http.c / api.c     HTTP request parser and routing       |
+|  api_v1.c           OpenAI-compatible REST API skeleton   |
+|  llm.c              Model loading and inference skeleton  |
 +-----------------------------------------------------------+
 ```
 
@@ -63,17 +67,28 @@ The kernel boots via Multiboot, initializes serial and VGA output, brings up an 
 src/            C source files (kernel, drivers, HTTP, LLM)
 include/        Header files
 build/          Build scripts, linker script, artifacts
+tests/          Host-side unit tests and integration helpers
 documentation/  MkDocs documentation site
 llama.cpp/      llama.cpp headers for model integration
 ```
 
+## Current Status
+
+The project is in **Phase 0 (stabilization)**. The kernel builds cleanly, boots in QEMU, and has a working heap allocator and OpenAI-compatible HTTP API skeleton. The following capabilities are still placeholders and are tracked in the production-readiness plan:
+
+- TCP/IP networking and real HTTP socket I/O
+- Real LLM inference (llama.cpp integration)
+- GPU acceleration (CUDA/Vulkan/Metal)
+- Streaming token generation
+
 ## Roadmap
 
 - [x] Multiboot kernel with VGA + serial output
-- [x] Custom libc (malloc, snprintf, string ops)
-- [x] PCI enumeration and e1000 NIC driver
-- [x] HTTP server with REST API endpoints
-- [x] llama.cpp-compatible API (v1 endpoints)
+- [x] Buildable C unikernel with zero warnings
+- [x] Working heap allocator (`malloc`/`free`) with coalescing
+- [x] Host-side unit tests and CI smoke test
+- [x] llama.cpp-compatible API skeleton (v1 endpoints)
+- [ ] TCP/IP networking and HTTP server over sockets
 - [ ] Integrate llama.cpp inference engine
 - [ ] GPU passthrough (CUDA backend)
 - [ ] Streaming token generation

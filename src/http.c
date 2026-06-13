@@ -24,6 +24,7 @@ static bool str_starts_with_ci(const char* str, const char* prefix) {
 
 // Parse a single header and extract known values
 static void parse_header(const char* header, size_t len, http_request_t* request) {
+    (void)len;
     // Check for Content-Length
     if (str_starts_with_ci(header, "Content-Length:")) {
         const char* value = header + 15;
@@ -246,7 +247,7 @@ int http_generate_response(const http_response_t* response, char* buffer, size_t
     }
     
     // Copy status line to buffer
-    if (status_len < 0 || status_len >= sizeof(status_line)) {
+    if (status_len < 0 || (size_t)status_len >= sizeof(status_line)) {
         return -1;
     }
     
@@ -268,7 +269,7 @@ int http_generate_response(const http_response_t* response, char* buffer, size_t
     char content_length_header[64];
     int content_length_len = snprintf(content_length_header, sizeof(content_length_header), 
                                       "Content-Length: %zu\r\n", response->body_length);
-    if (content_length_len < 0 || content_length_len >= sizeof(content_length_header)) {
+    if (content_length_len < 0 || (size_t)content_length_len >= sizeof(content_length_header)) {
         return -1;
     }
     

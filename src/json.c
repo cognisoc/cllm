@@ -84,8 +84,6 @@ static json_token_t parse_string(json_parser_t* p) {
 static json_token_t parse_number(json_parser_t* p) {
     size_t start = p->pos;
     bool negative = false;
-    bool has_decimal = false;
-    bool has_exponent = false;
 
     if (p->input[p->pos] == '-') {
         negative = true;
@@ -99,7 +97,6 @@ static json_token_t parse_number(json_parser_t* p) {
 
     // Decimal part
     if (p->pos < p->len && p->input[p->pos] == '.') {
-        has_decimal = true;
         p->pos++;
         while (p->pos < p->len && is_digit(p->input[p->pos])) {
             p->pos++;
@@ -108,7 +105,6 @@ static json_token_t parse_number(json_parser_t* p) {
 
     // Exponent part
     if (p->pos < p->len && (p->input[p->pos] == 'e' || p->input[p->pos] == 'E')) {
-        has_exponent = true;
         p->pos++;
         if (p->pos < p->len && (p->input[p->pos] == '+' || p->input[p->pos] == '-')) {
             p->pos++;
@@ -155,7 +151,7 @@ static json_token_t parse_number(json_parser_t* p) {
     p->number_value += fraction;
 
     // Apply exponent
-    if (has_exponent) {
+    if (in_exponent) {
         if (exp_negative) exponent = -exponent;
         double mult = 1.0;
         for (int i = 0; i < (exponent > 0 ? exponent : -exponent); i++) {

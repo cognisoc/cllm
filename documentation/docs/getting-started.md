@@ -18,6 +18,7 @@ sudo apt-get install gcc gcc-multilib make qemu-system-x86
 ```bash
 make            # release build
 make debug      # debug build with symbols
+make test       # run host-side unit tests
 make clean      # remove build artifacts
 ```
 
@@ -43,12 +44,11 @@ On boot, serial output shows kernel initialization:
 
 ```
 BOOT
-KERNEL: Serial port initialized
-KERNEL: Memory management system initialized
-KERNEL: VGA initialized
-KERNEL: Hello from our custom unikernel!
-KERNEL: Network initialized successfully
-KERNEL: All tests completed. Entering network loop...
+KERNEL: CLLM unikernel booting
+KERNEL: Memory initialized
+KERNEL: Network initialized
+KERNEL: Self-tests passed
+KERNEL: Entering network loop
 ```
 
 ## Key Components

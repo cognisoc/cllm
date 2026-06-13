@@ -23,4 +23,7 @@ void pool_free(memory_pool_t* pool, void* ptr);
 // Initialize memory management system
 void memory_init(void);
 
+// Initialize the heap allocator (implementation lives in string.c for now)
+void memory_init_heap(void);
+
 #endif // MEMORY_H

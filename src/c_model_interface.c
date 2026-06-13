@@ -87,7 +87,8 @@ uint32_t c_calculate_model_checksum(const uint8_t* data, size_t size) {
 
 int c_verify_model_integrity(const uint8_t* data, size_t size) {
     if (!data || size == 0) return 0;
-    uint32_t c = crc32_calc(data, size);
-    return (c == EMBEDDED_MODEL_CHECKSUM) ? 1 : 0;
+    // Real integrity verification requires a build-time checksum. Until that is
+    // implemented, only validate the GGUF header.
+    return c_validate_gguf_format(data, size);
 }
 

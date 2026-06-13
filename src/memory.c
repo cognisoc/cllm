@@ -26,6 +26,8 @@ size_t get_free_memory(void) {
 
 // Memory pool functions
 memory_pool_t* create_memory_pool(size_t block_size, size_t num_blocks) {
+    (void)block_size;
+    (void)num_blocks;
     // In a real implementation, this would create a memory pool
     // For now, we'll return NULL to indicate failure
     serial_write("MEMORY: create_memory_pool called (stub)\n");
@@ -59,7 +61,6 @@ void pool_free(memory_pool_t* pool, void* ptr) {
 // Initialize memory management system
 void memory_init(void) {
     serial_write("MEMORY: Initializing memory management system\n");
-    // In a real implementation, this would initialize the memory management system
-    // For now, we'll just log that it was called
+    memory_init_heap();
     serial_write("MEMORY: Memory management system initialized\n");
 }
