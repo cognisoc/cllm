@@ -11,7 +11,7 @@ INCLUDE_DIR="${PROJECT_ROOT}/include"
 
 # Build modes
 BUILD_MODE="release"  # Can be "debug" or "release"
-TARGET_ARCH="i386"  # Target architecture
+TARGET_ARCH="i386"    # Target architecture (only i386 is supported currently)
 
 # Colors for output
 RED='\033[0;31m'
@@ -61,7 +61,7 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --debug             Build in debug mode"
             echo "  --release           Build in release mode (default)"
-            echo "  --arch ARCH         Target architecture (default: x86_64)"
+            echo "  --arch ARCH         Target architecture (default: i386)"
             echo "  --clean             Clean build directory before building"
             echo "  --help              Show this help message"
             exit 0
@@ -93,12 +93,6 @@ print_info "  Build Directory: ${BUILD_DIR}"
 print_info "Building C components..."
 "${PROJECT_ROOT}/build/build_c.sh" --mode "${BUILD_MODE}" --arch "${TARGET_ARCH}"
 
-# Skip Zig components for the kernel build.
-# The existing Zig source files depend on hosted OS features (std.net, std.Thread.Mutex,
-# std.heap.c_allocator) that are not available in a bare-metal unikernel target, and no
-# Zig exports are currently linked into the kernel. Re-enable this step only after the
-# Zig code has been ported to a freestanding environment.
-print_info "Skipping Zig components for bare-metal kernel build"
 
 # Link everything together
 print_info "Linking components..."

@@ -1,5 +1,5 @@
 #!/bin/bash
-# link_components.sh - Link C and Zig components together
+# link_components.sh - Link C components into the kernel binary
 
 set -e
 
@@ -11,7 +11,7 @@ INCLUDE_DIR="${PROJECT_ROOT}/include"
 
 # Default values
 BUILD_MODE="release"
-TARGET_ARCH="x86_64"
+TARGET_ARCH="i386"
 
 # Colors for output
 RED='\033[0;31m'
@@ -73,40 +73,18 @@ else
 fi
 
 # Determine architecture-specific flags
-if [[ "${TARGET_ARCH}" == "x86_64" ]]; then
-    ARCH_FLAGS="-m elf_x86_64"
-elif [[ "${TARGET_ARCH}" == "i386" ]] || [[ "${TARGET_ARCH}" == "x86" ]]; then
+if [[ "${TARGET_ARCH}" == "i386" ]] || [[ "${TARGET_ARCH}" == "x86" ]]; then
     ARCH_FLAGS="-m elf_i386"
 else
-    print_error "Unsupported architecture: ${TARGET_ARCH}"
+    print_error "Unsupported architecture: ${TARGET_ARCH} (only i386 is supported)"
     exit 1
 fi
 
-# Check if object directories exist
+# Check if object directory exists
 C_OBJECTS_DIR="${BUILD_DIR}/c_objects"
-ZIG_OBJECTS_DIR="${BUILD_DIR}/zig_objects"
 
 # Core kernel files that should be linked into the main binary
 CORE_C_FILES=("boot.S" "kernel.c" "allocator.c" "string.c" "http.c" "api.c" "api_v1.c" "json.c" "c_model_interface.c" "network.c" "network/pci.c" "network/e1000.c" "llm.c" "cuda_interface.c" "memory.c" "error.c" "model_embedding.c")
-
-# Find only core C object files
-C_OBJECTS=()
-for file in "${CORE_C_FILES[@]}"; do
-    if [[ "$file" == *.S ]]; then
-        # Assembly file
-        obj_file="${C_OBJECTS_DIR}/${file%.S}.o"
-    else
-        # C file
-        obj_file="${C_OBJECTS_DIR}/${file%.c}.o"
-    fi
-    if [[ -f "$obj_file" ]]; then
-        C_OBJECTS+=("$obj_file")
-    else
-        print_warning "Core C file object not found: $obj_file"
-    fi
-done
-# Temporarily avoid linking Zig objects to keep kernel freestanding
-CORE_ZIG_FILES=()
 
 if [[ ! -d "${C_OBJECTS_DIR}" ]]; then
     print_warning "C object directory not found: ${C_OBJECTS_DIR}"
@@ -130,33 +108,15 @@ else
     done
 fi
 
-if [[ ${#CORE_ZIG_FILES[@]} -eq 0 ]]; then
-    # No Zig objects are linked into the kernel at this time.
-    ZIG_OBJECTS=()
-elif [[ ! -d "${ZIG_OBJECTS_DIR}" ]]; then
-    print_warning "Zig object directory not found: ${ZIG_OBJECTS_DIR}"
-    ZIG_OBJECTS=()
-else
-    # Find only core Zig object files
-    ZIG_OBJECTS=()
-    for file in "${CORE_ZIG_FILES[@]}"; do
-        obj_file="${ZIG_OBJECTS_DIR}/${file%.zig}.o"
-        if [[ -f "$obj_file" ]]; then
-            ZIG_OBJECTS+=("$obj_file")
-        fi
-    done
-fi
-
 # Check if we have any object files to link
-if [[ ${#C_OBJECTS[@]} -eq 0 && ${#ZIG_OBJECTS[@]} -eq 0 ]]; then
+if [[ ${#C_OBJECTS[@]} -eq 0 ]]; then
     print_error "No core object files found to link"
     exit 1
 fi
 
-print_info "Found ${#C_OBJECTS[@]} core C object files and ${#ZIG_OBJECTS[@]} core Zig object files"
+print_info "Found ${#C_OBJECTS[@]} core C object files"
 
-# Collect core object files only
-ALL_OBJECTS=("${C_OBJECTS[@]}" "${ZIG_OBJECTS[@]}")
+ALL_OBJECTS=("${C_OBJECTS[@]}")
 
 # Determine linker script
 LINKER_SCRIPT="${BUILD_DIR}/linker.ld"

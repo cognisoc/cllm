@@ -73,12 +73,10 @@ else
 fi
 
 # Determine architecture-specific flags
-if [[ "${TARGET_ARCH}" == "x86_64" ]]; then
-    ARCH_FLAGS="-m64"
-elif [[ "${TARGET_ARCH}" == "i386" ]] || [[ "${TARGET_ARCH}" == "x86" ]]; then
+if [[ "${TARGET_ARCH}" == "i386" ]] || [[ "${TARGET_ARCH}" == "x86" ]]; then
     ARCH_FLAGS="-m32"
 else
-    print_error "Unsupported architecture: ${TARGET_ARCH}"
+    print_error "Unsupported architecture: ${TARGET_ARCH} (only i386 is supported)"
     exit 1
 fi
 
