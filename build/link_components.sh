@@ -84,7 +84,7 @@ fi
 C_OBJECTS_DIR="${BUILD_DIR}/c_objects"
 
 # Core kernel files that should be linked into the main binary
-CORE_C_FILES=("boot.S" "kernel.c" "allocator.c" "string.c" "http.c" "api.c" "api_v1.c" "json.c" "c_model_interface.c" "network.c" "network/pci.c" "network/e1000.c" "llm.c" "cuda_interface.c" "memory.c" "error.c" "model_embedding.c")
+CORE_C_FILES=("boot.S" "kernel.c" "allocator.c" "string.c" "http.c" "api.c" "api_v1.c" "json.c" "c_model_interface.c" "network.c" "network/arp.c" "network/ip.c" "network/tcp.c" "network/pci.c" "network/e1000.c" "llm.c" "cuda_interface.c" "memory.c" "error.c" "model_embedding.c")
 
 if [[ ! -d "${C_OBJECTS_DIR}" ]]; then
     print_warning "C object directory not found: ${C_OBJECTS_DIR}"

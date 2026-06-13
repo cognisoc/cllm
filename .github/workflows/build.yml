@@ -24,7 +24,7 @@ jobs:
       - name: Run host unit tests
         run: ./tests/host/run_tests.sh
 
-      - name: QEMU smoke test
+      - name: QEMU boot smoke test
         run: |
           set -e
           timeout 15 qemu-system-i386 \
@@ -32,8 +32,13 @@ jobs:
             -serial stdio \
             -display none \
             -no-reboot \
-            -m 128M 2&1 | tee qemu.log || true
+            -m 128M \
+            -netdev user,id=net0,hostfwd=tcp::8080-:8080 \
+            -device e1000,netdev=net0 2&1 | tee qemu.log || true
           grep -q "KERNEL: CLLM unikernel booting" qemu.log
           grep -q "KERNEL: Self-tests passed" qemu.log
           grep -q "KERNEL: Entering network loop" qemu.log
-          echo "QEMU smoke test passed"
+          echo "QEMU boot smoke test passed"
+
+      - name: HTTP integration test
+        run: python3 tests/integration/http_smoke.py

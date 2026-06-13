@@ -7,7 +7,7 @@ INCLUDE_DIR := $(PROJECT_ROOT)/include
 
 # QEMU configuration
 QEMU ?= qemu-system-i386
-QEMU_FLAGS ?= -kernel $(BUILD_DIR)/kernel.bin -serial stdio -display none -no-reboot -m 128M
+QEMU_FLAGS ?= -kernel $(BUILD_DIR)/kernel.bin -serial stdio -display none -no-reboot -m 128M -netdev user,id=net0,hostfwd=tcp::8080-:8080 -device e1000,netdev=net0
 
 # Default target
 .DEFAULT_GOAL := all
@@ -42,7 +42,7 @@ run: release
 # Boot kernel in QEMU with VGA display
 run-vga: release
 	@echo "Booting kernel in QEMU (VGA display)..."
-	$(QEMU) -kernel $(BUILD_DIR)/kernel.bin -serial stdio -m 128M
+	$(QEMU) -kernel $(BUILD_DIR)/kernel.bin -serial stdio -m 128M -netdev user,id=net0,hostfwd=tcp::8080-:8080 -device e1000,netdev=net0
 
 # Boot kernel in QEMU paused for GDB
 run-debug: debug
