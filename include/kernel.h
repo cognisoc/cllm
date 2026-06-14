@@ -8,6 +8,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // VGA text buffer constants
 #define VGA_TEXT_WIDTH 80
 #define VGA_TEXT_HEIGHT 25
@@ -24,5 +28,9 @@ void serial_init(void);
 // Memory allocation
 void* malloc(size_t size);
 void free(void* ptr);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

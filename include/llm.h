@@ -22,6 +22,10 @@ int llm_detokenize(llm_context_t* ctx, const int* tokens, int token_count, char*
 int llm_eval(llm_context_t* ctx, const int* tokens, int token_count, int n_threads);
 int llm_sample(llm_context_t* ctx, int* token);
 
+// Convenience: tokenize prompt, evaluate, sample up to max_tokens, and write text.
+int llm_generate(llm_context_t* ctx, const char* prompt, int max_tokens,
+                 char* output, size_t output_size);
+
 // Default parameters
 llm_params_t llm_default_params(void);
 
