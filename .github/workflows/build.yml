@@ -24,6 +24,9 @@ jobs:
       - name: Run host unit tests
         run: ./tests/host/run_tests.sh
 
+      - name: Build llama.cpp host library
+        run: ./tests/llama/run_llama_test.sh
+
       - name: QEMU boot smoke test
         run: |
           set -e

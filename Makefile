@@ -13,7 +13,7 @@ QEMU_FLAGS ?= -kernel $(BUILD_DIR)/kernel.bin -serial stdio -display none -no-re
 .DEFAULT_GOAL := all
 
 # Phony targets
-.PHONY: all clean debug release run run-vga run-debug test help
+.PHONY: all clean debug release run run-vga run-debug test test-llama help
 
 # All targets
 all: release
@@ -53,6 +53,10 @@ run-debug: debug
 test:
 	@./tests/host/run_tests.sh
 
+# Build and run llama.cpp host API integration test
+test-llama:
+	@./tests/llama/run_llama_test.sh
+
 # Help
 help:
 	@echo "Available targets:"
@@ -64,4 +68,5 @@ help:
 	@echo "  run-vga    - Build and boot in QEMU (VGA window)"
 	@echo "  run-debug  - Build debug and boot paused for GDB on :1234"
 	@echo "  test       - Run host-side unit tests"
+	@echo "  test-llama - Build and run llama.cpp host API test"
 	@echo "  help       - Show this help message"

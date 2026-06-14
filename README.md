@@ -39,6 +39,7 @@ Serial output appears on your terminal. Press `Ctrl-A X` to exit QEMU.
 | `make run-vga` | Build and boot in QEMU (VGA window) |
 | `make run-debug` | Build and boot paused for GDB on `:1234` |
 | `make test` | Run host-side unit tests |
+| `make test-llama` | Build llama.cpp and run host API test |
 | `make clean` | Remove build artifacts |
 
 ## Architecture
@@ -69,15 +70,14 @@ include/        Header files
 build/          Build scripts, linker script, artifacts
 tests/          Host-side unit tests and integration helpers
 documentation/  MkDocs documentation site
-llama.cpp/      llama.cpp headers for model integration
+llama.cpp/      llama.cpp upstream submodule
 ```
 
 ## Current Status
 
-The project is in **Phase 0 (stabilization)**. The kernel builds cleanly, boots in QEMU, and has a working heap allocator and OpenAI-compatible HTTP API skeleton. The following capabilities are still placeholders and are tracked in the production-readiness plan:
+The project is in **Phase 1**. The kernel builds cleanly, boots in QEMU, has a working heap allocator, a minimal TCP/IP stack serving HTTP requests, and upstream llama.cpp added as a pinned submodule with a host-side API test. The following capabilities are still placeholders and are tracked in the production-readiness plan:
 
-- TCP/IP networking and real HTTP socket I/O
-- Real LLM inference (llama.cpp integration)
+- Real LLM inference linked into the kernel binary (requires C++ runtime and OS stubs)
 - GPU acceleration (CUDA/Vulkan/Metal)
 - Streaming token generation
 
@@ -88,8 +88,9 @@ The project is in **Phase 0 (stabilization)**. The kernel builds cleanly, boots 
 - [x] Working heap allocator (`malloc`/`free`) with coalescing
 - [x] Host-side unit tests and CI smoke test
 - [x] llama.cpp-compatible API skeleton (v1 endpoints)
-- [ ] TCP/IP networking and HTTP server over sockets
-- [ ] Integrate llama.cpp inference engine
+- [x] TCP/IP networking and HTTP server over sockets
+- [x] llama.cpp added as pinned upstream submodule with host API test
+- [ ] Link llama.cpp inference into the kernel binary (requires C++ runtime + stubs)
 - [ ] GPU passthrough (CUDA backend)
 - [ ] Streaming token generation
 - [ ] vLLM optimizations for transformer serving
