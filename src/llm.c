@@ -148,3 +148,46 @@ int llm_sample(llm_context_t* ctx, int* token) {
     serial_write("LLM: Sampling completed (placeholder)\n");
     return 0;
 }
+
+// Convenience: tokenize, evaluate, sample, and write text up to max_tokens.
+int llm_generate(llm_context_t* ctx, const char* prompt, int max_tokens,
+                 char* output, size_t output_size) {
+    if (!ctx || !prompt || max_tokens <= 0 || !output || output_size == 0) {
+        return -1;
+    }
+
+    int tokens[512];
+    int n_tokens = llm_tokenize(ctx, prompt, tokens, 512);
+    if (n_tokens < 0) {
+        return -1;
+    }
+
+    size_t out_len = 0;
+    output[0] = '\0';
+
+    for (int i = 0; i < max_tokens && out_len + 1 < output_size; i++) {
+        if (llm_eval(ctx, tokens, n_tokens, ctx->threads) != 0) {
+            return -1;
+        }
+        int next_token;
+        if (llm_sample(ctx, &next_token) != 0) {
+            return -1;
+        }
+
+        char c = (char)(unsigned char)next_token;
+        output[out_len++] = c;
+        output[out_len] = '\0';
+
+        if (n_tokens < 512) {
+            tokens[n_tokens++] = next_token;
+        } else {
+            // Shift token window to make room
+            for (int j = 1; j < 512; j++) {
+                tokens[j - 1] = tokens[j];
+            }
+            tokens[511] = next_token;
+        }
+    }
+
+    return (int)out_len;
+}

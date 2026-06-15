@@ -98,9 +98,12 @@ static int parse_request_line(const char* line, http_request_t* request) {
     
     return 0;
 }
-
 // Parse HTTP request
 int http_parse_request(const char* raw_request, size_t length, http_request_t* request) {
+    if (!raw_request || !request || length == 0 || length > HTTP_REQUEST_BODY_SIZE + 4096) {
+        return -1;
+    }
+
     // Initialize request structure
     request->method[0] = '\0';
     request->path[0] = '\0';
@@ -208,6 +211,11 @@ int http_parse_request(const char* raw_request, size_t length, http_request_t* r
         strncpy(request->body, raw_request + body_start, body_len);
         request->body[body_len] = '\0';
         request->body_length = body_len;
+    }
+
+    // Hard request-size limits for safety.
+    if (request->body_length > HTTP_REQUEST_BODY_SIZE - 1) {
+        return -1;
     }
 
     return 0;

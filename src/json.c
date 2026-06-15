@@ -62,6 +62,10 @@ static json_token_t parse_string(json_parser_t* p) {
                 case 't':  c = '\t'; break;
                 case 'u':
                     // Skip unicode escape (just consume 4 hex digits)
+                    if (p->pos + 4 >= p->len) {
+                        strncpy(p->error, "Invalid unicode escape", sizeof(p->error));
+                        return JSON_TOK_ERROR;
+                    }
                     p->pos += 4;
                     c = '?'; // Replace with placeholder
                     break;

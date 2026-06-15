@@ -7,6 +7,8 @@
 #include "json.h"
 #include "string.h"
 #include "kernel.h"
+#include "safestring.h"
+#include "llm.h"
 
 #include <stdbool.h>
 
@@ -29,7 +31,8 @@ static const char* MODEL_ID = "embedded-llama";
 
 // Set JSON content type header
 static void set_json_headers(http_response_t* response) {
-    strncpy(response->headers, "Content-Type: application/json\r\n", sizeof(response->headers));
+    safe_strcpy(response->headers, sizeof(response->headers),
+                "Content-Type: application/json\r\n");
 }
 
 // Generate request ID
@@ -112,6 +115,9 @@ static int parse_completion_request(const char* body, size_t len, completion_req
             if (json_parse_string(&p, req->model, sizeof(req->model)) != 0) return -1;
         } else if (strcmp(key, "max_tokens") == 0) {
             if (json_parse_int(&p, &req->max_tokens) != 0) return -1;
+            if (req->max_tokens < 0 || req->max_tokens > MAX_GENERATION_TOKENS) {
+                req->max_tokens = MAX_GENERATION_TOKENS;
+            }
         } else if (strcmp(key, "temperature") == 0) {
             double v;
             if (json_parse_number(&p, &v) != 0) return -1;
@@ -224,6 +230,9 @@ static int parse_chat_request(const char* body, size_t len, chat_completion_requ
             if (json_parse_string(&p, req->model, sizeof(req->model)) != 0) return -1;
         } else if (strcmp(key, "max_tokens") == 0) {
             if (json_parse_int(&p, &req->max_tokens) != 0) return -1;
+            if (req->max_tokens < 0 || req->max_tokens > MAX_GENERATION_TOKENS) {
+                req->max_tokens = MAX_GENERATION_TOKENS;
+            }
         } else if (strcmp(key, "temperature") == 0) {
             double v;
             if (json_parse_number(&p, &v) != 0) return -1;
@@ -427,11 +436,14 @@ int handle_v1_completions(http_request_t* request, http_response_t* response) {
         n_tokens = llm_tokenize(g_api_ctx.llm_ctx, req.prompt, tokens, MAX_TOKENS);
         if (n_tokens < 0) n_tokens = 0;
 
-        // Placeholder generation - in real impl, would call llm_eval and llm_sample
-        // For now, generate a simple response
-        strncpy(generated_text, " [completion placeholder]", sizeof(generated_text));
+        // Real generation when llm_generate() is available.
+        if (llm_generate(g_api_ctx.llm_ctx, req.prompt,
+                         req.max_tokens > 0 ? req.max_tokens : 16,
+                         generated_text, sizeof(generated_text)) <= 0) {
+            safe_strcpy(generated_text, sizeof(generated_text), " [generation failed]");
+        }
     } else {
-        strncpy(generated_text, " [model not loaded]", sizeof(generated_text));
+        safe_strcpy(generated_text, sizeof(generated_text), " [model not loaded]");
     }
 
     // Build response
@@ -501,7 +513,24 @@ int handle_v1_chat_completions(http_request_t* request, http_response_t* respons
     }
 
     // Placeholder response
-    const char* assistant_response = "Hello! I'm a placeholder response from the CLLM unikernel.";
+    char assistant_response[MAX_PROMPT_LENGTH] = "Hello! I'm a placeholder response from the CLLM unikernel.";
+
+    if (g_api_ctx.llm_ctx) {
+        // Concatenate messages into a single prompt for the base model.
+        char prompt[MAX_PROMPT_LENGTH] = "";
+        for (int i = 0; i < req.message_count; i++) {
+            safe_strcat(prompt, sizeof(prompt), req.messages[i].content);
+            if (i + 1 < req.message_count) {
+                safe_strcat(prompt, sizeof(prompt), "\n");
+            }
+        }
+        if (llm_generate(g_api_ctx.llm_ctx, prompt,
+                         req.max_tokens > 0 ? req.max_tokens : 16,
+                         assistant_response, sizeof(assistant_response)) <= 0) {
+            safe_strcpy(assistant_response, sizeof(assistant_response),
+                        " [generation failed]");
+        }
+    }
 
     // Count tokens in all messages (simplified)
     int prompt_tokens = 0;

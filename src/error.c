@@ -132,9 +132,7 @@ void log_message(log_level_t level, const char* file, int line, const char* form
     // For fatal errors, halt the system
     if (level == LOG_FATAL) {
         serial_write("SYSTEM HALTED due to fatal error\n");
-        while (1) {
-            __asm__("hlt");
-        }
+        cpu_halt();
     }
 }
 

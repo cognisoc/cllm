@@ -54,6 +54,10 @@ static inline uint8_t inb(uint16_t port) {
     return ret;
 }
 
+void cpu_halt(void) {
+    __asm__ volatile("hlt");
+}
+
 // Function to create VGA color entry
 static inline uint8_t vga_entry_color(enum vga_color fg, enum vga_color bg) {
     return fg | bg << 4;

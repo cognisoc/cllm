@@ -31,7 +31,7 @@ typedef struct {
     size_t len;
     size_t pos;
     json_token_t current;
-    char string_buf[4096];
+    char string_buf[1024];
     size_t string_len;
     double number_value;
     char error[128];

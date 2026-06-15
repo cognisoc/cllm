@@ -2,6 +2,7 @@
 #define MEMORY_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 // Enhanced memory management functions
 void* malloc(size_t size);
@@ -25,5 +26,10 @@ void memory_init(void);
 
 // Initialize the heap allocator (implementation lives in string.c for now)
 void memory_init_heap(void);
+
+// Stack guard: detect stack overflow before it corrupts adjacent data
+void memory_init_stack_guard(uintptr_t base, size_t size);
+size_t memory_check_stack_guard(void);
+size_t memory_get_stack_margin(void);
 
 #endif // MEMORY_H

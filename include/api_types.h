@@ -19,13 +19,16 @@
 #define MAX_EMBEDDING_DIM    4096
 
 // Default values
-#define DEFAULT_MAX_TOKENS      256
+#define DEFAULT_MAX_TOKENS      64
 #define DEFAULT_TEMPERATURE     0.8f
 #define DEFAULT_TOP_P           0.95f
 #define DEFAULT_TOP_K           40
 #define DEFAULT_FREQ_PENALTY    0.0f
 #define DEFAULT_PRES_PENALTY    0.0f
 #define DEFAULT_SEED            -1
+
+// Safety limits
+#define MAX_GENERATION_TOKENS   512
 
 // ============================================================================
 // Request Types

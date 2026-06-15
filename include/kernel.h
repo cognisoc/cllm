@@ -25,6 +25,9 @@ void terminal_writestring(const char* data);
 void serial_write(const char* data);
 void serial_init(void);
 
+// CPU pause / idle
+void cpu_halt(void);
+
 // Memory allocation
 void* malloc(size_t size);
 void free(void* ptr);
