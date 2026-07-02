@@ -7,6 +7,10 @@
 ![Platform](https://img.shields.io/badge/platform-x86-blue)
 ![Language](https://img.shields.io/badge/language-C-lightgrey)
 
+**[Website](https://cllm.cognisoc.com)** · **[Docs](https://docs.cognisoc.com/cllm/)** · **[GitHub](https://github.com/cognisoc/cllm)**
+
+Where a typical inference server runs inside a container on top of a Linux userland and kernel, CLLM removes the OS, the container, and the userland entirely -- it boots as a Multiboot unikernel straight into an HTTP inference server on bare x86, with its own libc subset, e1000 NIC driver, and REST API, for a minimal attack surface and no OS overhead.
+
 ## What is CLLM?
 
 CLLM is a Multiboot-compliant unikernel written in C that boots directly on bare metal (or in QEMU) and serves LLM inference over HTTP. It eliminates the operating system layer entirely -- the kernel *is* the application.
@@ -91,3 +95,22 @@ llama.cpp/      llama.cpp headers for model integration
 ## License
 
 See [LICENSE](LICENSE) for details.
+
+---
+
+## Part of the Cognisoc stack
+
+**[Cognisoc](https://www.cognisoc.com)** builds open-source LLM inference for every language and every device — *LLM inference, everywhere.* This project is one of six:
+
+| Project | Language | What it does |
+|---|---|---|
+| [mullama](https://github.com/cognisoc/mullama) | Python · Node · Go · PHP · Rust · C | Local LLM runtime & server, drop-in Ollama alternative |
+| [unillm](https://github.com/cognisoc/unillm) | Rust | Modular inference runtime, 47 architectures |
+| [llamafu](https://github.com/cognisoc/llamafu) | Dart / Flutter | On-device inference for mobile apps |
+| [llmdot](https://github.com/cognisoc/llmdot) | C# / .NET | Local GGUF inference for the .NET ecosystem |
+| **cllm** **(this project)** | C | Bare-metal unikernel — boots straight into inference |
+| [zigllm](https://github.com/cognisoc/zigllm) | Zig | Learn LLMs by building one, from tensors to text |
+
+🌐 [cognisoc.com](https://www.cognisoc.com) · 📚 [docs.cognisoc.com](https://docs.cognisoc.com) · 🐙 [github.com/cognisoc](https://github.com/cognisoc)
+
+---
