@@ -12,6 +12,7 @@
 #include "c_model_interface.h"
 #include "memory.h"
 #include "error.h"
+#include "spinlock.h"
 
 // VGA text buffer
 static const size_t VGA_WIDTH = 80;
@@ -21,6 +22,10 @@ size_t terminal_row;
 size_t terminal_column;
 uint8_t terminal_color;
 uint16_t* terminal_buffer;
+
+// Serial output lock.  Statically initialized because serial_write is called
+// before any dynamic initialization runs.
+static spinlock_t g_serial_lock = SPINLOCK_INIT;
 
 // VGA color constants
 enum vga_color {
@@ -119,11 +124,15 @@ static void update_cursor(int row, int col) {
 
 // Write to serial port
 void serial_write(const char* data) {
+    if (!data) return;
+
+    spinlock_lock(&g_serial_lock);
     for (size_t i = 0; data[i] != '\0'; i++) {
         // Wait for serial port to be ready
         while (!(inb(0x3F8 + 5) & 0x20));
         outb(0x3F8, data[i]);
     }
+    spinlock_unlock(&g_serial_lock);
 }
 
 // Initialize terminal

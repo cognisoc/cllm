@@ -20,6 +20,9 @@
 #define E1000_RXDESCLEN 0x02808 // Receive Descriptor Length
 #define E1000_RXDESCHEAD 0x02810 // Receive Descriptor Head
 #define E1000_RXDESCTAIL 0x02818 // Receive Descriptor Tail
+#define E1000_RAL      0x05400  // Receive Address Low (slot 0)
+#define E1000_RAH      0x05404  // Receive Address High (slot 0)
+
 #define E1000_TCTRL    0x00400  // Transmit Control
 #define E1000_TXDESCLO 0x03800  // Transmit Descriptor Base Low
 #define E1000_TXDESCHI 0x03804  // Transmit Descriptor Base High
@@ -76,6 +79,9 @@
 
 // Transmit Buffer Size
 #define E1000_TCTL_COLD_FULL_DUPLEX 0x00040000  // Full Duplex Collision Distance
+
+// Receive Address High bits
+#define E1000_RAH_AV         0x80000000  // Address Valid
 
 // Receive Descriptor Status Bits
 #define E1000_RXD_STAT_DD    0x01  // Descriptor Done

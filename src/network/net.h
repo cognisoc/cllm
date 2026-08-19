@@ -24,10 +24,12 @@
 #define TCP_FLAG_ACK   0x10
 #define TCP_FLAG_URG   0x20
 
-// Network configuration (static for now)
-#define NET_IP_ADDR    0x0A000002  // 10.0.0.2
-#define NET_GATEWAY    0x0A000002  // 10.0.0.2 (QEMU user-mode gateway)
-#define NET_NETMASK    0xFF000000  // 255.0.0.0
+// Network configuration (static for now).
+// These defaults match QEMU's built-in user-mode network (slirp) so that
+// hostfwd rules and ARP resolution work out of the box.
+#define NET_IP_ADDR    0x0A00020F  // 10.0.2.15
+#define NET_GATEWAY    0x0A000202  // 10.0.2.2 (QEMU user-mode gateway)
+#define NET_NETMASK    0xFFFFFF00  // 255.255.255.0
 #define NET_MAC_ADDR   {0x52, 0x54, 0x00, 0x12, 0x34, 0x56}
 
 // Packet buffer

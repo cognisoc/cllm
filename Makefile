@@ -13,7 +13,7 @@ QEMU_FLAGS ?= -kernel $(BUILD_DIR)/kernel.bin -serial stdio -display none -no-re
 .DEFAULT_GOAL := all
 
 # Phony targets
-.PHONY: all clean debug release run run-vga run-debug test test-llama help
+.PHONY: all clean debug release run run-vga run-debug test test-llama smoke-test help
 
 # All targets
 all: release
@@ -57,6 +57,10 @@ test:
 test-llama:
 	@./tests/llama/run_llama_test.sh
 
+# Run QEMU smoke test (builds release kernel and checks boot milestones)
+smoke-test:
+	@./tests/qemu/smoke_test.sh
+
 # Help
 help:
 	@echo "Available targets:"
@@ -69,4 +73,5 @@ help:
 	@echo "  run-debug  - Build debug and boot paused for GDB on :1234"
 	@echo "  test       - Run host-side unit tests"
 	@echo "  test-llama - Build and run llama.cpp host API test"
+	@echo "  smoke-test - Build release kernel and run QEMU boot milestones"
 	@echo "  help       - Show this help message"

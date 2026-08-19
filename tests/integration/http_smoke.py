@@ -6,32 +6,46 @@ Runs the kernel in QEMU with user-mode networking, forwards host port 8080 to
 the guest, and sends HTTP requests to verify the server responds.
 """
 
+import socket
 import subprocess
 import sys
 import time
 import urllib.request
 
 KERNEL = "build/kernel.bin"
-QEMU_CMD = [
-    "qemu-system-i386",
-    "-kernel", KERNEL,
-    "-serial", "stdio",
-    "-display", "none",
-    "-no-reboot",
-    "-m", "128M",
-    "-netdev", "user,id=net0,hostfwd=tcp::8080-:8080",
-    "-device", "e1000,netdev=net0",
-]
 BOOT_MARKER = "KERNEL: Entering network loop"
 
 
+def find_free_port() -> int:
+    """Return a free localhost TCP port."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        return int(s.getsockname()[1])
+
+
+def qemu_command(host_port: int) -> list[str]:
+    return [
+        "qemu-system-i386",
+        "-kernel", KERNEL,
+        "-serial", "stdio",
+        "-display", "none",
+        "-no-reboot",
+        "-m", "128M",
+        "-netdev", f"user,id=net0,hostfwd=tcp::{host_port}-:8080",
+        "-device", "e1000,netdev=net0",
+    ]
+
+
 def main() -> int:
-    print("Starting QEMU...")
+    host_port = find_free_port()
+    print(f"Starting QEMU with host port {host_port} forwarded to guest 8080...")
     proc = subprocess.Popen(
-        QEMU_CMD,
+        qemu_command(host_port),
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         bufsize=1,
     )
 
@@ -56,7 +70,7 @@ def main() -> int:
     # Give the TCP stack a moment to settle.
     time.sleep(1)
 
-    base = "http://127.0.0.1:8080"
+    base = f"http://127.0.0.1:{host_port}"
     checks = [
         ("GET", f"{base}/health", None),
         ("POST", f"{base}/v1/completions", b'{"prompt":"hello","max_tokens":4}'),

@@ -17,7 +17,7 @@ static e1000_tx_desc_t tx_desc_ring[TX_DESC_COUNT] __attribute__((aligned(16)));
 static uint8_t rx_buffers[RX_DESC_COUNT][RX_BUFFER_SIZE] __attribute__((aligned(16)));
 static uint8_t tx_buffers[TX_DESC_COUNT][TX_BUFFER_SIZE] __attribute__((aligned(16)));
 
-static uint16_t rx_tail = 0;
+static uint16_t rx_head = 0;  // Next descriptor for the driver to check.
 static uint16_t tx_tail = 0;
 
 // Read from e1000 register
@@ -90,14 +90,17 @@ int e1000_init(void) {
         tx_desc_ring[i].special = 0;
     }
     
-    // Set up receive descriptor ring
+    // Set up receive descriptor ring.  Hardware owns descriptors in the
+    // [RDH, RDT] range; initialize RDT to the last descriptor so the entire
+    // ring is available, and track rx_head separately as the next descriptor
+    // for the driver to inspect.
     e1000_write_reg(E1000_RXDESCLO, (uint32_t)(uintptr_t)rx_desc_ring);
     e1000_write_reg(E1000_RXDESCHI, (uint32_t)((uint64_t)(uintptr_t)rx_desc_ring >> 32));
     e1000_write_reg(E1000_RXDESCLEN, sizeof(rx_desc_ring));
     e1000_write_reg(E1000_RXDESCHEAD, 0);
     e1000_write_reg(E1000_RXDESCTAIL, RX_DESC_COUNT - 1);
-    rx_tail = RX_DESC_COUNT - 1;
-    
+    rx_head = 0;
+
     // Set up transmit descriptor ring
     e1000_write_reg(E1000_TXDESCLO, (uint32_t)(uintptr_t)tx_desc_ring);
     e1000_write_reg(E1000_TXDESCHI, (uint32_t)((uint64_t)(uintptr_t)tx_desc_ring >> 32));
@@ -105,25 +108,37 @@ int e1000_init(void) {
     e1000_write_reg(E1000_TXDESCHEAD, 0);
     e1000_write_reg(E1000_TXDESCTAIL, 0);
     
+    // Program receive address (RAL/RAH).  Promiscuous mode is enabled, but
+    // setting the station address is still required for correct operation.
+    static const uint8_t our_mac[ETH_ADDR_LEN] = NET_MAC_ADDR;
+    uint32_t ral = ((uint32_t)our_mac[0]) |
+                   ((uint32_t)our_mac[1] << 8) |
+                   ((uint32_t)our_mac[2] << 16) |
+                   ((uint32_t)our_mac[3] << 24);
+    uint32_t rah = ((uint32_t)our_mac[4]) |
+                   ((uint32_t)our_mac[5] << 8) |
+                   E1000_RAH_AV;
+    e1000_write_reg(E1000_RAL, ral);
+    e1000_write_reg(E1000_RAH, rah);
+
     // Enable receiver and transmitter
     serial_write("e1000_init: Enabling receiver and transmitter\n");
-    e1000_write_reg(E1000_RCTRL, 
-        E1000_RCTL_EN | E1000_RCTL_SBP | E1000_RCTL_UPE | 
-        E1000_RCTL_MPE | E1000_RCTL_LPE | E1000_RCTL_LBM_NO | 
-        E1000_RCTL_RDMTS_HALF | E1000_RCTL_MO_36 | E1000_RCTL_BAM | 
-        E1000_RCTL_BSEX | E1000_RCTL_SECRC | E1000_RCTL_BSIZE_2048);
-    
-    e1000_write_reg(E1000_TCTRL, 
-        E1000_TCTL_EN | E1000_TCTL_PSP | E1000_TCTL_CT | 
-        E1000_TCTL_COLD_FULL_DUPLEX | E1000_TCTL_SWXOFF | 
-        E1000_TCTL_PBE | E1000_TCTL_RTLC | E1000_TCTL_NRTU);
-    
+    e1000_write_reg(E1000_RCTRL,
+        E1000_RCTL_EN | E1000_RCTL_SBP | E1000_RCTL_UPE |
+        E1000_RCTL_MPE | E1000_RCTL_LPE | E1000_RCTL_LBM_NO |
+        E1000_RCTL_RDMTS_HALF | E1000_RCTL_MO_36 | E1000_RCTL_BAM |
+        E1000_RCTL_SECRC | E1000_RCTL_BSIZE_2048);
+
+    e1000_write_reg(E1000_TCTRL,
+        E1000_TCTL_EN | E1000_TCTL_PSP | E1000_TCTL_CT |
+        E1000_TCTL_COLD_FULL_DUPLEX);
+
     // Set link up
     serial_write("e1000_init: Setting link up\n");
     uint32_t ctrl = e1000_read_reg(E1000_CTRL);
     ctrl |= E1000_CTRL_SLU;
     e1000_write_reg(E1000_CTRL, ctrl);
-    
+
     serial_write("e1000_init: Initialization complete\n");
     return 0; // Success
 }
@@ -173,22 +188,23 @@ int e1000_receive_packet(void* buffer, uint16_t* length) {
     if (!e1000_base) {
         return -1; // Device not initialized
     }
-    
-    // Check if there's a packet available
-    if (!(rx_desc_ring[rx_tail].status & E1000_RXD_STAT_DD)) {
+
+    // Check the next descriptor the driver owns.
+    if (!(rx_desc_ring[rx_head].status & E1000_RXD_STAT_DD)) {
         return -1; // No packet available
     }
-    
+
     // Copy data from buffer
-    *length = rx_desc_ring[rx_tail].length;
-    memcpy(buffer, rx_buffers[rx_tail], *length);
-    
-    // Clear status
-    rx_desc_ring[rx_tail].status = 0;
-    
-    // Update tail
-    rx_tail = (rx_tail + 1) % RX_DESC_COUNT;
-    e1000_write_reg(E1000_RXDESCTAIL, rx_tail);
-    
+    *length = rx_desc_ring[rx_head].length;
+    if (*length > RX_BUFFER_SIZE) {
+        *length = RX_BUFFER_SIZE;
+    }
+    memcpy(buffer, rx_buffers[rx_head], *length);
+
+    // Hand the descriptor back to hardware.
+    rx_desc_ring[rx_head].status = 0;
+    rx_head = (rx_head + 1) % RX_DESC_COUNT;
+    e1000_write_reg(E1000_RXDESCTAIL, (rx_head + RX_DESC_COUNT - 1) % RX_DESC_COUNT);
+
     return 0; // Success
 }

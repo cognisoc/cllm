@@ -22,26 +22,13 @@ jobs:
         run: make
 
       - name: Run host unit tests
-        run: ./tests/host/run_tests.sh
+        run: make test
 
       - name: Build llama.cpp host library
-        run: ./tests/llama/run_llama_test.sh
+        run: make test-llama
 
       - name: QEMU boot smoke test
-        run: |
-          set -e
-          timeout 15 qemu-system-i386 \
-            -kernel build/kernel.bin \
-            -serial stdio \
-            -display none \
-            -no-reboot \
-            -m 128M \
-            -netdev user,id=net0,hostfwd=tcp::8080-:8080 \
-            -device e1000,netdev=net0 2&1 | tee qemu.log || true
-          grep -q "KERNEL: CLLM unikernel booting" qemu.log
-          grep -q "KERNEL: Self-tests passed" qemu.log
-          grep -q "KERNEL: Entering network loop" qemu.log
-          echo "QEMU boot smoke test passed"
+        run: make smoke-test
 
       - name: HTTP integration test
         run: python3 tests/integration/http_smoke.py

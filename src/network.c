@@ -59,6 +59,7 @@ void network_loop(void) {
     static char buffer[NET_BUF_SIZE];
     size_t length = 0;
     uint32_t last_tcp_tick = 0;
+    uint32_t packet_counter = 0;
 
     while (1) {
         int got_packet = (network_receive_packet(buffer, &length) == 0);
@@ -68,6 +69,14 @@ void network_loop(void) {
             uint16_t et = be16_to_cpu(hdr->ethertype);
             const uint8_t* payload = (const uint8_t*)buffer + ETH_HDR_LEN;
             size_t payload_len = length - ETH_HDR_LEN;
+
+            packet_counter++;
+            if (packet_counter <= 10) {
+                char dbg[64];
+                snprintf(dbg, sizeof(dbg), "NET: rx packet %u ethertype=%04x len=%zu\n",
+                         packet_counter, et, length);
+                serial_write(dbg);
+            }
 
             if (et == ETHERTYPE_ARP) {
                 arp_receive(payload, payload_len);
@@ -83,7 +92,9 @@ void network_loop(void) {
             last_tcp_tick = 0;
         }
 
-        // Idle to reduce busy spin.
-        __asm__("hlt");
+        // Idle hint.  We currently rely on polling because interrupt delivery
+        // (IDT/PIC/IOAPIC/e1000 ISR) is not yet wired up.  Once interrupts are
+        // enabled, replace this with sti+hlt and wake on packet arrival.
+        __asm__("pause");
     }
 }
